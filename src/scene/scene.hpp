@@ -1,3 +1,0 @@
-//
-//  scene.hpp
-//  Thanda

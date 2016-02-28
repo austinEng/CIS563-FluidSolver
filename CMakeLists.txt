@@ -1,11 +1,7 @@
-##################
-#     Thanda     #
-##################
-
 # credit - base CMake config : Yining Karl Li , edited CMake config: Akshay Shah & Debanshu Singh
 
 #name your project
-project(Thanda)
+project(FluidSolver)
 cmake_minimum_required(VERSION 2.8)
 
 # set creates a variable
@@ -15,6 +11,8 @@ include_directories(
         ${NUPARU}/include
         ${NUPARU}/src
 )
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # Add path for pre-compiled libraries here (we will later link them with our compiled source)
 # Add Nuparu library to path for OSX, linux and windows
@@ -33,7 +31,7 @@ set(GLFW_LIBRARY_DIR ${CMAKE_LIBRARY_PATH})
 set(GLEW_LIBRARY_DIR ${CMAKE_LIBRARY_PATH})
 
 # Use find_package & find_library to link with
-find_package(OPENGL REQUIRED)
+find_package(OpenGL REQUIRED)
 find_package(GLEW)
 find_library(GLFW_LIBRARY "glfw3" HINTS ${GLFW_LIBRARY_DIR})
 find_library(JSONCPP "jsoncpp")
@@ -70,11 +68,11 @@ elseif(WIN32)
 endif()
 
 if(MSVC)
-    set(COMPILER_FLAGS 
+    set(COMPILER_FLAGS
             CMAKE_CXX_FLAGS
             CMAKE_CXX_FLAGS_DEBUG
             CMAKE_CXX_FLAGS_RELEASE
-            CMAKE_C_FLAGS 
+            CMAKE_C_FLAGS
             CMAKE_C_FLAGS_DEBUG
             CMAKE_C_FLAGS_RELEASE
         )
@@ -82,13 +80,24 @@ endif()
 
 # Add source files you want to compile (.cpp)
 set(CORE_SRC
-        src/main.cpp
-        src/camera/camera.cpp
-        src/viewer/viewer.cpp
-        src/fluidSolver/fluidSolver.cpp
-        src/scene/scene.cpp
-        src/geom/geom.cpp
+        main.cpp
+        core/display/InputHandler.cpp
+        core/display/InputHandler.h
+        core/display/Window.cpp
+        core/display/Window.h
+        core/fileIO/SceneLoader.cpp
+        core/fileIO/SceneLoader.h
+        core/geometry/Bound.cpp
+        core/geometry/Bound.h
+        core/geometry/Box.cpp
+        core/geometry/Box.h
+        core/geometry/Geo.cpp
+        core/geometry/Geo.h
+        core/geometry/GeoObject.h
+        core/solver/FluidSolver.cpp
+        core/solver/FluidSolver.h
+        core/util/math.h
 )
 
-add_executable(Thanda ${CORE_SRC})
-target_link_libraries(Thanda ${CORE_LIBS})
+add_executable(FluidSolver ${CORE_SRC})
+target_link_libraries(FluidSolver ${CORE_LIBS})
