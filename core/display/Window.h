@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h>
 #include "InputHandler.h"
 #include <core/solver/FluidSolver.h>
+#include <core/display/painters/Painter.h>
 
 class Window {
 public:
@@ -18,10 +19,14 @@ public:
     ~Window();
     void initloop();
 
+    void addPainter(Painter* painter);
+    void removePainter(Painter* painter);
+
 private:
     GLFWwindow* _window;
     void setupInputCBs();
     void handleMouseInput(InputHandler::MouseState &mouseState);
+    std::vector<Painter*> _painters;
 };
 
 

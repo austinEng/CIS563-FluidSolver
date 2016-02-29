@@ -5,23 +5,9 @@
 #include <fstream>
 #include <core/geometry/Box.h>
 #include "SceneLoader.h"
+#include <core/scenes/default.h>
 
-const char* SceneLoader::defaultScene =
-        "{\n"
-        "\t\"containerDim\" : {\n"
-        "\t\t\"scaleX\" : 5.0,\n"
-        "\t\t\"scaleY\" : 5.0,\n"
-        "\t\t\"scaleZ\" : 5.0\n"
-        "\t},\n"
-        "\t\"particleDim\" : {\n"
-        "\t\t\"boundX\" : 3.7,\n"
-        "\t\t\"boundY\" : 3.7,\n"
-        "\t\t\"boundZ\" : 3.7\n"
-        "\t},\n"
-        "\t\"particleSeparation\" : 0.1\n"
-        "}";
-
-Fluid::Solver* SceneLoader::LoadScene(const char *filepath) {
+FluidSolver* SceneLoader::LoadScene(const char *filepath) {
     Json::Reader reader;
 
     std::ifstream fileStream(filepath, std::ifstream::binary);
@@ -33,13 +19,13 @@ Fluid::Solver* SceneLoader::LoadScene(const char *filepath) {
             exit(EXIT_FAILURE);
         }
     } else {
-        return LoadScene(std::string(defaultScene));
+        return LoadScene(std::string(default_scene));
     }
 
     return parseJson(root);
 }
 
-Fluid::Solver* SceneLoader::LoadScene(const std::string &jsonstring) {
+FluidSolver* SceneLoader::LoadScene(const std::string &jsonstring) {
     Json::Reader reader;
     Json::Value root;
 
@@ -51,7 +37,7 @@ Fluid::Solver* SceneLoader::LoadScene(const std::string &jsonstring) {
     return parseJson(root);
 }
 
-Fluid::Solver* SceneLoader::parseJson(const Json::Value &root) {
+FluidSolver* SceneLoader::parseJson(const Json::Value &root) {
     Json::Value containerDim = root["containerDim"];
     Json::Value particleDim = root["particleDim"];
     Json::Value particleSeparation = root["particleSeparation"];
@@ -70,7 +56,7 @@ Fluid::Solver* SceneLoader::parseJson(const Json::Value &root) {
     Box* container = new Box(origin, containerX, containerY, containerZ);
     Box* fluidObject = new Box(origin, particleX, particleY, particleZ);
 
-    Fluid::Solver* solver = new Fluid::Solver(particleSep);
+    FluidSolver* solver = new FluidSolver(particleSep);
     solver->setContainer(container);
     solver->addFluid(fluidObject);
     return solver;

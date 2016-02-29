@@ -1,8 +1,8 @@
 //
-// Created by austin on 2/28/16.
+// Created by austin on 2/29/16.
 //
 
-const char* particle_frag = R"(
+const char* flat_frag = R"(
 #version 150
 
 in vec3 f_col;

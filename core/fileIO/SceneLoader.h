@@ -10,13 +10,13 @@
 
 class SceneLoader {
 public:
-    static Fluid::Solver* LoadScene(const char* filepath);
-    static Fluid::Solver* LoadScene(const std::string &jsonstring);
+    static FluidSolver* LoadScene(const char* filepath);
+    static FluidSolver* LoadScene(const std::string &jsonstring);
 
     static const char * defaultScene;
 
 private:
-    static Fluid::Solver* parseJson(const Json::Value &root);
+    static FluidSolver* parseJson(const Json::Value &root);
 };
 
 

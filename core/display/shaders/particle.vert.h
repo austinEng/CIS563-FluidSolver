@@ -2,7 +2,7 @@
 // Created by austin on 2/28/16.
 //
 
-std::string particle_vert = R"(
+const char* particle_vert = R"(
 #version 150
 
 in vec3 v_pos;
