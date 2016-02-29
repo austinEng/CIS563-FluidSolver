@@ -56,3 +56,7 @@ GLuint Painter::makeProgram(std::vector<GLuint> programs) {
     }
     return prog;
 }
+
+void Painter::setViewProj(const float *viewProj) {
+
+}

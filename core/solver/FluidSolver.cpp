@@ -7,18 +7,6 @@
 float FluidSolver::g = -9.80665f;
 
 FluidSolver::FluidSolver(float particleSep) : particle_radius(particleSep) {
-    FluidParticle p1;
-    p1.pos = glm::vec3(-0.2, -0.2, 0);
-
-    FluidParticle p2;
-    p2.pos = glm::vec3(0, 0.8, 0);
-
-    FluidParticle p3;
-    p3.pos = glm::vec3(0.8, 0.8, 0);
-
-    _particles.push_back(p1);
-    _particles.push_back(p2);
-    _particles.push_back(p3);
 }
 
 FluidSolver::~FluidSolver() {
@@ -39,6 +27,7 @@ void FluidSolver::addFluid(GeoObject *fluid) {
                     FluidParticle p;
                     p.pos = pos;
                     _particles.push_back(p);
+                    _particlesOld.push_back(p);
                 }
             }
         }
@@ -56,10 +45,19 @@ void FluidSolver::presolve(float step) {
 }
 
 void FluidSolver::solve(float step) {
-    for (FluidParticle &p : _particles) {
-        p.vel += g * step;
-        p.pos += p.vel * step;
+//    for (FluidParticle &p : _particles) {
+//        p.vel.y += g * step;
+//        p.pos += p.vel * step;
+//    }
+    for (unsigned int i = 0; i < _particles.size(); i++) {
+        _particles[i].vel.y = _particlesOld[i].vel.y + g * step;
+        _particles[i].pos += _particlesOld[i].vel * step;
+        if (_container->collides(_particlesOld[i].pos, _particles[i].pos)) {
+            _particles[i].col = glm::vec3(1,0,0);
+            _particlesOld[i].col = glm::vec3(1,0,0);
+        }
     }
+    swap(_particles, _particlesOld);
 }
 
 void FluidSolver::postsolve(float step) {

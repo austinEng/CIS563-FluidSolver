@@ -10,6 +10,7 @@
 #include "InputHandler.h"
 #include <core/solver/FluidSolver.h>
 #include <core/display/painters/Painter.h>
+#include <core/camera/Camera.h>
 
 class Window {
 public:
@@ -17,7 +18,7 @@ public:
     Window(int w = 640, int h = 480);
     Window(int w, int h, const char* title);
     ~Window();
-    void initloop();
+    void initloop(std::function<void(void)> predraw = [](){});
 
     void addPainter(Painter* painter);
     void removePainter(Painter* painter);
@@ -27,6 +28,11 @@ private:
     void setupInputCBs();
     void handleMouseInput(InputHandler::MouseState &mouseState);
     std::vector<Painter*> _painters;
+    Camera camera;
+    void updateCamera();
+
+    int _w;
+    int _h;
 };
 
 

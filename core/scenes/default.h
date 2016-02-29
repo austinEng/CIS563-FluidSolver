@@ -5,9 +5,9 @@
 const char* default_scene = R"(
 {
     "containerDim" : {
-        "scaleX" : 0.5,
-        "scaleY" : 0.5,
-        "scaleZ" : 0.5
+        "scaleX" : 5.0,
+        "scaleY" : 5.0,
+        "scaleZ" : 5.0
     },
     "particleDim" : {
         "boundX" : 3.7,

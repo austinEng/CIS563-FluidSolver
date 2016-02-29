@@ -11,6 +11,7 @@
 class Painter {
 public:
     virtual void draw() const = 0;
+    virtual void setViewProj(const float* viewProj);
 
 protected:
     GLuint prog;

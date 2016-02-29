@@ -6,13 +6,16 @@
 #include <core/display/shaders/particle.frag.h>
 #include <core/display/shaders/particle.vert.h>
 
-ParticlesPainter::ParticlesPainter(FluidSolver* solver, float ptSize) : _ptSize(ptSize), _particles(&solver->_particles) {
+ParticlesPainter::ParticlesPainter(FluidSolver* solver, float ptSize) : _ptSize(ptSize), _particles(&solver->_particlesOld) {
+    MAX_PARTICLES = _particles->size();
+
     GLuint particleVert = compileShader(particle_vert, GL_VERTEX_SHADER);
     GLuint particleFrag = compileShader(particle_frag, GL_FRAGMENT_SHADER);
 
     std::vector<GLuint> programs = {particleVert, particleFrag};
     prog = makeProgram(programs);
 
+    unifViewProj = glGetUniformLocation(prog, "u_viewProj");
     attrPos = glGetAttribLocation(prog, "v_pos");
     attrVel = glGetAttribLocation(prog, "v_vel");
     attrCol = glGetAttribLocation(prog, "v_col");
@@ -46,4 +49,9 @@ void ParticlesPainter::draw() const {
         glDisableVertexAttribArray(attrVel);
         glDisableVertexAttribArray(attrCol);
     }
+}
+
+void ParticlesPainter::setViewProj(const float *viewProj) {
+    glUseProgram(prog);
+    glUniformMatrix4fv(unifViewProj, 1, GL_FALSE, viewProj);
 }

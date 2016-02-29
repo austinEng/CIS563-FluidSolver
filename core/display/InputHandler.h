@@ -64,9 +64,15 @@ public:
         bool rightDragFinish;
     };
 
-    typedef void(*MouseListener)(MouseState&);
+    //typedef void(*MouseListener)(MouseState&);
+    //typedef void (*WindowListener)(int w, int h);
+    typedef std::function<void(int, int)> WindowListener;
+    typedef std::function<void(MouseState&)> MouseListener;
     void registerMouseListener(MouseListener listener);
-    void deregisterMouseListener(MouseListener listener);
+    //void deregisterMouseListener(MouseListener listener);
+    void registerWindowListener(WindowListener listener);
+    //void deregisterWindowListener(WindowListener listener);
+    void windowResized(int w, int h);
 
 private:
     InputHandler();
@@ -80,6 +86,7 @@ private:
     void mouseMoved();
 
     std::vector<MouseListener> mouseSubscribers;
+    std::vector<WindowListener> windowSubscribers;
     void emit(MouseState &event);
 };
 

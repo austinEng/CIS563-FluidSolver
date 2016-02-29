@@ -13,11 +13,13 @@ public:
     BoxPainter(Box* box);
     void update();
     void draw() const;
+    virtual void setViewProj(const float* viewProj);
 
 private:
     GLuint vertex_buffer;
     GLuint index_buffer;
 
+    GLint unifViewProj;
     GLint attrPos;
     GLint attrCol;
 

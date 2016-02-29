@@ -14,7 +14,17 @@ int main(int argc, char* argv[]) {
     window->addPainter(&particlesPainter);
     window->addPainter(&boxPainter);
 
-    window->initloop();
+    int framerate = 24;
+
+    double start = glfwGetTime();
+    window->initloop([&]() {
+        double now = glfwGetTime();
+        float duration = (float) (now - start);
+        if (duration >= 1.f / framerate) {
+            start = now;
+            solver->update(duration);
+        }
+    });
     delete window;
 
     return 0;

@@ -18,6 +18,7 @@ BoxPainter::BoxPainter(Box *box) : _box(box) {
     std::vector<GLuint> programs = {vert, frag};
     prog = makeProgram(programs);
 
+    unifViewProj = glGetUniformLocation(prog, "u_viewProj");
     attrPos = glGetAttribLocation(prog, "v_pos");
     attrCol = glGetAttribLocation(prog, "v_col");
 
@@ -58,15 +59,22 @@ void BoxPainter::create() {
     if (_box != nullptr) {
         vert verts[8];
         GLuint indices[24];
-
-        verts[0].pos = glm::vec3(_box->minX(), _box->minY(), _box->minZ());
-        verts[1].pos = glm::vec3(_box->minX(), _box->maxY(), _box->minZ());
-        verts[2].pos = glm::vec3(_box->minX(), _box->maxY(), _box->maxZ());
-        verts[3].pos = glm::vec3(_box->minX(), _box->minY(), _box->maxZ());
-        verts[4].pos = glm::vec3(_box->maxX(), _box->minY(), _box->minZ());
-        verts[5].pos = glm::vec3(_box->maxX(), _box->maxY(), _box->minZ());
-        verts[6].pos = glm::vec3(_box->maxX(), _box->maxY(), _box->maxZ());
-        verts[7].pos = glm::vec3(_box->maxX(), _box->minY(), _box->maxZ());
+        
+        float minX = _box->minX();
+        float maxX = _box->maxX();
+        float minY = _box->minY();
+        float maxY = _box->maxY();
+        float minZ = _box->minZ();
+        float maxZ = _box->maxZ();
+        
+        verts[0].pos = glm::vec3(minX, minY, minZ);
+        verts[1].pos = glm::vec3(minX, maxY, minZ);
+        verts[2].pos = glm::vec3(minX, maxY, maxZ);
+        verts[3].pos = glm::vec3(minX, minY, maxZ);
+        verts[4].pos = glm::vec3(maxX, minY, minZ);
+        verts[5].pos = glm::vec3(maxX, maxY, minZ);
+        verts[6].pos = glm::vec3(maxX, maxY, maxZ);
+        verts[7].pos = glm::vec3(maxX, minY, maxZ);
 
         indices[0] = 0; indices[1] = 1;
         indices[2] = 1; indices[3] = 2;
@@ -98,4 +106,9 @@ void BoxPainter::create() {
 void BoxPainter::destroy() {
     glDeleteBuffers(1, &vertex_buffer);
     glDeleteBuffers(1, &index_buffer);
+}
+
+void BoxPainter::setViewProj(const float *viewProj) {
+    glUseProgram(prog);
+    glUniformMatrix4fv(unifViewProj, 1, GL_FALSE, viewProj);
 }

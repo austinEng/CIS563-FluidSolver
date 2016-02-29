@@ -12,11 +12,13 @@ class ParticlesPainter : public Painter {
 public:
     ParticlesPainter(FluidSolver* solver, float ptSize = 3.f);
     virtual void draw() const;
+    virtual void setViewProj(const float* viewProj);
 
 private:
     unsigned int MAX_PARTICLES = 10000;
     GLuint particle_buffer;
 
+    GLint unifViewProj;
     GLint attrPos;
     GLint attrVel;
     GLint attrCol;

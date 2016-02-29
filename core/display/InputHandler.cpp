@@ -140,6 +140,7 @@ void InputHandler::delWheel(double val, bool events) {
     if (events) {
         emit(_mouseState);
     }
+    _mouseState.delWheel = 0;
 }
 
 void InputHandler::leftDown(bool val, bool events) {
@@ -188,15 +189,28 @@ void InputHandler::key(int key, bool down, bool events) {
 
 void InputHandler::emit(MouseState &event) {
     for (int i = 0; i < mouseSubscribers.size(); i++) {
-        //mouseSubscribers.at(i)->operator()(event);
         mouseSubscribers.at(i)(event);
     }
 }
 
-void InputHandler::registerMouseListener(void(*listener)(MouseState &mouseState)) {
+void InputHandler::registerMouseListener(InputHandler::MouseListener listener) {
     mouseSubscribers.push_back(listener);
 }
 
-void InputHandler::deregisterMouseListener(MouseListener listener) {
-    mouseSubscribers.erase(std::remove(mouseSubscribers.begin(), mouseSubscribers.end(), listener), mouseSubscribers.end());
+//void InputHandler::deregisterMouseListener(MouseListener listener) {
+//    mouseSubscribers.erase(std::remove(mouseSubscribers.begin(), mouseSubscribers.end(), listener), mouseSubscribers.end());
+//}
+
+void InputHandler::windowResized(int w, int h) {
+    for (int i = 0; i < windowSubscribers.size(); i++) {
+        windowSubscribers.at(i)(w, h);
+    }
 }
+
+void InputHandler::registerWindowListener(InputHandler::WindowListener listener) {
+    windowSubscribers.push_back(listener);
+}
+
+//void InputHandler::deregisterWindowListener(InputHandler::WindowListener listener) {
+//    windowSubscribers.erase(std::remove(windowSubscribers.begin(), windowSubscribers.end(), listener), windowSubscribers.end());
+//}
