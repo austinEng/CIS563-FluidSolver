@@ -36,7 +36,6 @@ public:
 
 private:
     std::vector<FluidParticle> _particles;
-    std::vector<FluidParticle> _particlesOld;
     float particle_radius;
 
     void presolve(float step);

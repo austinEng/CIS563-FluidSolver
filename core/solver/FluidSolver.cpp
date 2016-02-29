@@ -27,7 +27,6 @@ void FluidSolver::addFluid(GeoObject *fluid) {
                     FluidParticle p;
                     p.pos = pos;
                     _particles.push_back(p);
-                    _particlesOld.push_back(p);
                 }
             }
         }
@@ -45,19 +44,17 @@ void FluidSolver::presolve(float step) {
 }
 
 void FluidSolver::solve(float step) {
-//    for (FluidParticle &p : _particles) {
-//        p.vel.y += g * step;
-//        p.pos += p.vel * step;
-//    }
+    std::vector<FluidParticle> tempParticles(_particles.size());
     for (unsigned int i = 0; i < _particles.size(); i++) {
-        _particles[i].vel.y = _particlesOld[i].vel.y + g * step;
-        _particles[i].pos += _particlesOld[i].vel * step;
-        if (_container->collides(_particlesOld[i].pos, _particles[i].pos)) {
+        tempParticles[i].vel = _particles[i].vel + glm::vec3(0, g * step, 0);
+        tempParticles[i].pos = _particles[i].pos + _particles[i].vel * step;
+
+        if (_container->collides(_particles[i].pos, tempParticles[i].pos)) {
             _particles[i].col = glm::vec3(1,0,0);
-            _particlesOld[i].col = glm::vec3(1,0,0);
         }
+        tempParticles[i].col = _particles[i].col;
     }
-    swap(_particles, _particlesOld);
+    swap(_particles, tempParticles);
 }
 
 void FluidSolver::postsolve(float step) {
