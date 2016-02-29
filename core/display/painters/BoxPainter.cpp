@@ -48,7 +48,7 @@ void BoxPainter::draw() const {
         glVertexAttribPointer(attrCol, 3, GL_FLOAT, GL_FALSE, sizeof(vert), (void*)offsetof(vert, col));
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-        glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, (void*)0);
+        glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, (void*)0);
 
         glDisableVertexAttribArray(attrPos);
         glDisableVertexAttribArray(attrCol);
@@ -81,10 +81,10 @@ void BoxPainter::create() {
         indices[4] = 2; indices[5] = 3;
         indices[6] = 3; indices[7] = 0;
 
-        indices[8] = 3; indices[9] = 4;
-        indices[10] = 4; indices[11] = 5;
-        indices[12] = 5; indices[13] = 6;
-        indices[14] = 6; indices[15] = 3;
+        indices[8] = 4; indices[9] = 5;
+        indices[10] = 5; indices[11] = 6;
+        indices[12] = 6; indices[13] = 7;
+        indices[14] = 7; indices[15] = 4;
 
         indices[16] = 0; indices[17] = 4;
         indices[18] = 1; indices[19] = 5;
@@ -96,7 +96,7 @@ void BoxPainter::create() {
         }
 
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-        glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(glm::vec3), verts, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(vert), verts, GL_STATIC_DRAW);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, 24 * sizeof(GLuint), indices, GL_STATIC_DRAW);

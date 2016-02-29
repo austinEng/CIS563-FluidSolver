@@ -123,7 +123,6 @@ void Window::setupInputCBs() {
         if (!fequal(mouseState.delWheel, 0.0)) {
             glm::vec3 vec = camera.tgt - camera.eye;
             float fac = glm::min(glm::abs(glm::length(vec)/5.f), 1.f);
-            //camera.eye += (float)mouseState.delWheel * fac * glm::normalize(vec);
             camera.zoom -= (float)mouseState.delWheel * fac;
             camera.recomputeEye();
             updateCamera();
