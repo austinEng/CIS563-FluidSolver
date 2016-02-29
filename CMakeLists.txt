@@ -98,7 +98,7 @@ set(CORE_SRC
         core/solver/FluidSolver.cpp
         core/solver/FluidSolver.h
         core/util/math.h
-)
+        core/display/shaders/particle.frag.h core/display/shaders/particle.vert.h)
 
 add_executable(FluidSolver ${CORE_SRC})
 target_link_libraries(FluidSolver ${CORE_LIBS})

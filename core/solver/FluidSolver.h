@@ -34,7 +34,7 @@ namespace Fluid {
 
     private:
         GeoObject* _container;
-        std::vector<Particle*> _particles;
+        std::vector<Particle> _particles;
         float particle_radius;
 
         void presolve(float step);
