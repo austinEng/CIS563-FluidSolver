@@ -19,7 +19,10 @@ Window::Window(int w, int h, const char* title) : _window(nullptr), camera(w, h)
 
     if (!glfwInit()) exit(EXIT_FAILURE);
 
+    // use antialiasing
     glfwWindowHint(GLFW_SAMPLES, 4);
+
+    // set version to OpenGL 3.3
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
@@ -44,6 +47,7 @@ Window::Window(int w, int h, const char* title) : _window(nullptr), camera(w, h)
 Window::~Window() {
 
 }
+
 
 void Window::setupInputCBs() {
 
@@ -121,7 +125,9 @@ void Window::setupInputCBs() {
 
     inputHandler.registerMouseListener([&](InputHandler::MouseState &mouseState) {
         if (!fequal(mouseState.delWheel, 0.0)) {
+            // change camera zoom level based on scroll direction
             glm::vec3 vec = camera.tgt - camera.eye;
+            // limit zoom when very near to target
             float fac = glm::min(glm::abs(glm::length(vec)/5.f), 1.f);
             camera.zoom -= (float)mouseState.delWheel * fac;
             camera.recomputeEye();
@@ -130,12 +136,15 @@ void Window::setupInputCBs() {
 
         if (mouseState.wheelDragging) {
             if (inputHandler.key(340)) {
+                // pixel position offset from center
                 float x = (float) (_w/2 - mouseState.delX);
                 float y = (float) (_h/2 - mouseState.delY);
 
+                // offset in ndc
                 float sx = (2*x / _w) - 1.f;
                 float sy = 1.f - (2*y / _h);
 
+                // project camera up amd right axes
                 float alpha = camera.fovy / 2;
                 float len = glm::length(camera.tgt - camera.eye);
                 glm::vec3 V = camera.up*(float)(len*tan(alpha));
@@ -146,17 +155,19 @@ void Window::setupInputCBs() {
                 updateCamera();
                 return;
             }
-            glm::vec4 y = glm::vec4(0,1,0,0);
-            glm::vec4 diff(mouseState.delX / _w, mouseState.delY / _h, 0, 0);
-            float a = (float) acos(glm::dot(y, diff) / (glm::length(y) * (glm::length(diff))));
-            glm::vec4 para;
+
+            glm::vec4 y = glm::vec4(0,1,0,0); // y axis vector
+            glm::vec4 diff(mouseState.delX / _w, mouseState.delY / _h, 0, 0); // mouse offset
+            float a = (float) acos(glm::dot(y, diff) / (glm::length(y) * (glm::length(diff)))); // calculate offset angle from y axis
+            glm::vec4 para; // parallel axis to mouse movement
             if (diff[0] > 0) {
                 para = glm::mat4_cast(glm::angleAxis(-a, glm::vec3(camera.look[0], camera.look[1], camera.look[2]))) * glm::vec4(camera.up, 1);
             } else {
                 para = glm::mat4_cast(glm::angleAxis(a, glm::vec3(camera.look[0], camera.look[1], camera.look[2]))) * glm::vec4(camera.up, 1);
             }
-            glm::vec3 perp = glm::normalize(glm::cross(camera.look, glm::vec3(para)));
+            glm::vec3 perp = glm::normalize(glm::cross(camera.look, glm::vec3(para))); // perpendicular axis to mouse movement
 
+            // rotate camera on perpendicular axis
             glm::mat4 rot = glm::mat4_cast(glm::angleAxis(-2*PI*glm::length(diff), perp));
             camera.rotation = rot * camera.rotation;
             camera.up = glm::vec3(rot * glm::vec4(camera.up, 0));
@@ -221,6 +232,7 @@ void Window::removePainter(Painter *painter) {
 
 void Window::updateCamera() {
     camera.recompute();
+    // send camera uniforms to painters
     for (Painter* painter : _painters) {
         painter->setViewProj(glm::value_ptr(camera.viewProj()));
     }

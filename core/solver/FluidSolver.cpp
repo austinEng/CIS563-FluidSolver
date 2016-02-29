@@ -17,6 +17,9 @@ void FluidSolver::setContainer(GeoObject *container) {
     _container = container;
 }
 
+/*
+ * Loop over fluid bounds to generate particles
+ */
 void FluidSolver::addFluid(GeoObject *fluid) {
     Bound& b = fluid->bound();
     for (float x = b.minX(); x < b.maxX(); x += particle_radius) {

@@ -20,6 +20,8 @@ int main(int argc, char* argv[]) {
     window->initloop([&]() {
         double now = glfwGetTime();
         float duration = (float) (now - start);
+
+        // limit solver update to 24fps
         if (duration >= 1.f / framerate) {
             start = now;
             solver->update(duration);
