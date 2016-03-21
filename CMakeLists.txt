@@ -35,6 +35,12 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW)
 find_library(GLFW_LIBRARY "glfw3" HINTS ${GLFW_LIBRARY_DIR})
 find_library(JSONCPP "jsoncpp")
+find_library(OPENVDB openvdb Half)
+find_library(HALF Half)
+find_library(TBB NAMES tbb tbbmalloc)
+find_library(ZLIB z)
+
+#Iex IexMath Imath IlmThread
 
 add_definitions(
         -DTW_STATIC
@@ -44,7 +50,7 @@ add_definitions(
         -D_CRT_SECURE_NO_WARNINGS
 )
 
-set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENGL_LIBRARY} )
+set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENGL_LIBRARY} ${OPENVDB} ${TBB} ${ZLIB} ${HALF})
 
 # OSX-specific hacks/fixes
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -58,7 +64,7 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 # Linux specific hacks/fixes
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(CORE_LIBS ${CORE_LIBS} X11 Xxf86vm Xrandr pthread Xi)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lX11 -lXxf86vm -lXrandr -lpthread -lXi")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lX11 -lXxf86vm -lXrandr -lpthread -lXi -lz")
 endif()
 
 # set compiler flags for c++11
@@ -98,7 +104,7 @@ set(CORE_SRC
         core/solver/FluidSolver.cpp
         core/solver/FluidSolver.h
         core/util/math.h
-        core/display/shaders/particle.frag.h core/display/shaders/particle.vert.h core/display/painters/ParticlesPainter.cpp core/display/painters/ParticlesPainter.h core/display/painters/Painter.cpp core/display/painters/Painter.h core/display/painters/BoxPainter.cpp core/display/painters/BoxPainter.h core/display/shaders/flat.vert.h core/display/shaders/flat.frag.h core/scenes/default.h core/camera/Camera.cpp core/camera/Camera.h)
+        core/display/shaders/particle.frag.h core/display/shaders/particle.vert.h core/display/painters/ParticlesPainter.cpp core/display/painters/ParticlesPainter.h core/display/painters/Painter.cpp core/display/painters/Painter.h core/display/painters/BoxPainter.cpp core/display/painters/BoxPainter.h core/display/shaders/flat.vert.h core/display/shaders/flat.frag.h core/scenes/default.h core/camera/Camera.cpp core/camera/Camera.h core/solver/grid/Grid.cpp core/solver/grid/Grid.h core/solver/grid/MACGrid.cpp core/solver/grid/MACGrid.h core/solver/FluidParticle.h core/fileIO/ParticlesWriter.cpp core/fileIO/ParticlesWriter.h)
 
 add_executable(FluidSolver ${CORE_SRC})
 target_link_libraries(FluidSolver ${CORE_LIBS})
