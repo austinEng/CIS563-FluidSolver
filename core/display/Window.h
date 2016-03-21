@@ -11,6 +11,7 @@
 #include <core/solver/FluidSolver.h>
 #include <core/display/painters/Painter.h>
 #include <core/camera/Camera.h>
+#include <AntTweakBar/AntTweakBar.h>
 
 class Window {
 public:
@@ -22,6 +23,9 @@ public:
 
     void addPainter(Painter* painter);
     void removePainter(Painter* painter);
+
+    void initializeTweakBar();
+    TwButtonCallback loadSceneCB;
 
 private:
     GLFWwindow* _window;

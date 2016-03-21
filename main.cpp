@@ -19,6 +19,11 @@ int main(int argc, char* argv[]) {
     window->addPainter(&particlesPainter);
     window->addPainter(&boxPainter);
 
+    window->loadSceneCB = [](void*) {
+        std::cout << "what" << std::endl;
+    };
+    window->initializeTweakBar();
+
     int framerate = 24;
     double start = glfwGetTime();
     int frame = 0;

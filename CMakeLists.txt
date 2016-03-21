@@ -39,6 +39,7 @@ find_library(OPENVDB openvdb Half)
 find_library(HALF Half)
 find_library(TBB NAMES tbb tbbmalloc)
 find_library(ZLIB z)
+find_library(ANT AntTweakBar)
 
 #Iex IexMath Imath IlmThread
 
@@ -50,7 +51,7 @@ add_definitions(
         -D_CRT_SECURE_NO_WARNINGS
 )
 
-set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENGL_LIBRARY} ${OPENVDB} ${TBB} ${ZLIB} ${HALF})
+set(CORE_LIBS ${GLFW_LIBRARY} ${GLUT_LIBRARY} ${GLEW_LIBRARY} ${JSONCPP} ${OPENGL_LIBRARY} ${OPENVDB} ${TBB} ${ZLIB} ${HALF} ${ANT})
 
 # OSX-specific hacks/fixes
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

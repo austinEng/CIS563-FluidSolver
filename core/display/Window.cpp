@@ -14,7 +14,8 @@ InputHandler &inputHandler = InputHandler::getInputHandler();
 
 Window::Window(const char *title) : Window(640, 480, title) { }
 Window::Window(int w, int h) : Window(w, h, "GL Window"){ }
-Window::Window(int w, int h, const char* title) : _window(nullptr), camera(w, h), _w(w), _h(h) {
+Window::Window(int w, int h, const char* title) : _window(nullptr), camera(w, h), _w(w), _h(h),
+    loadSceneCB(NULL) {
     glfwSetErrorCallback(error_callback);
 
     if (!glfwInit()) exit(EXIT_FAILURE);
@@ -25,6 +26,11 @@ Window::Window(int w, int h, const char* title) : _window(nullptr), camera(w, h)
     // set version to OpenGL 3.3
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    #ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    #endif
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
     _window = glfwCreateWindow(w, h, title, NULL, NULL);
 
@@ -46,6 +52,16 @@ Window::Window(int w, int h, const char* title) : _window(nullptr), camera(w, h)
 
 Window::~Window() {
 
+}
+
+void Window::initializeTweakBar() {
+    int w, h;
+    glfwGetWindowSize(_window, &w, &h);
+    TwInit(TW_OPENGL_CORE, NULL);
+    TwWindowSize(w, h);
+    TwBar *myBar;
+    myBar = TwNewBar("Settings");
+    TwAddButton(myBar, "loadsceneBtn", loadSceneCB, NULL, " label='Load Scene'");
 }
 
 
@@ -73,9 +89,13 @@ void Window::setupInputCBs() {
                 break;
             default:break;
         }
+
+        TwEventKeyGLFW(key, action);
+        TwEventCharGLFW(key, action);
     });
     glfwSetCursorPosCallback(_window, [](GLFWwindow* window, double xpos, double ypos) {
         inputHandler.pos(xpos, ypos);
+        TwEventMousePosGLFW(xpos, ypos);
     });
     glfwSetMouseButtonCallback(_window, [](GLFWwindow* window, int button, int action, int mods) {
         switch(button) {
@@ -114,13 +134,16 @@ void Window::setupInputCBs() {
                 break;
             default:break;
         }
+        TwEventMouseButtonGLFW(button, action);
     });
     glfwSetScrollCallback(_window, [&](GLFWwindow* window, double xoffset, double yoffset) {
         inputHandler.delWheel(yoffset);
+        TwEventMouseWheelGLFW(yoffset);
     });
 
     glfwSetWindowSizeCallback(_window, [](GLFWwindow *window, int width, int height) {
         inputHandler.windowResized(width, height);
+        TwWindowSize(width, height);
     });
 
     inputHandler.registerMouseListener([&](InputHandler::MouseState &mouseState) {
@@ -209,9 +232,13 @@ void Window::initloop(std::function<void(void)> predraw) {
             painter->draw();
         }
 
+        TwDraw();
+
         glfwSwapBuffers(_window);
         glfwPollEvents();
     }
+
+    TwTerminate();
 
     glfwDestroyWindow(_window);
     glfwTerminate();
