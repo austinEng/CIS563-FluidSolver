@@ -8,6 +8,7 @@
 #include <vector>
 #include <core/util/math.h>
 #include <functional>
+#include <core/util/flags.h>
 
 template <typename T> class Grid {
     friend class GridVectorAttributePainter;
@@ -41,6 +42,11 @@ public:
     std::size_t fromIJK(const glm::ivec3 &ijk) const;
 
     void iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb);
+    void serial_iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb);
+#ifdef USETBB
+    void parallel_iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb);
+#endif
+
     void clear(const T &zeroVal);
 
     bool checkIdx(size_t i, size_t j, size_t k) const;

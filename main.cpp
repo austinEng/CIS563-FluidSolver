@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     solver->init();
 
     ParticlesWriter particlesWriter;
-    //particlesWriter.writeData(solver, "particles_0.vdb");
+    particlesWriter.writeData(solver, "particles_0.vdb");
 
     ParticlesPainter particlesPainter(solver);
     BoxPainter boxPainter((Box *) solver->_container);
@@ -34,15 +34,14 @@ int main(int argc, char* argv[]) {
     int framerate = 24;
     double start = glfwGetTime();
     int frame = 0;
-    //solver->update(0.01);
-    //solver->update(0.01);
-    //solver->update(0.01);
+
     window->initloop([&]() {
         double now = glfwGetTime();
         float duration = (float) (now - start);
 
         // limit solver update to 24fps
         if (duration >= 1.f / framerate) {
+            std::cout << duration << std::endl;
             start = now;
             //solver->update(duration);
             solver->update(1.f / framerate);
@@ -50,7 +49,7 @@ int main(int argc, char* argv[]) {
             std::string filename = "particles_";
             filename.append(std::to_string(++frame));
             filename.append(".vdb");
-            //particlesWriter.writeData(solver, filename);
+            particlesWriter.writeData(solver, filename);
         }
     });
 

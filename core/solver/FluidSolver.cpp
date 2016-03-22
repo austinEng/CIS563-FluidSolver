@@ -5,6 +5,8 @@
 #include <iostream>
 #include "FluidSolver.h"
 #include <core/util/hacks.h>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_invoke.h>
 
 float FluidSolver::g = -9.80665f;
 
@@ -69,13 +71,51 @@ void FluidSolver::projectVelocitiesToGrid() {
     _MAC._gU_old = _MAC._gU;
     _MAC._gV_old = _MAC._gV;
     _MAC._gW_old = _MAC._gW;
-    //particleAttributeToGrid(U_offset, _MAC._gU, _cell_size, 0.f);
+    particleAttributeToGrid(U_offset, _MAC._gU, _cell_size, 0.f);
     particleAttributeToGrid(V_offset, _MAC._gV, _cell_size, 0.f);
-    //particleAttributeToGrid(W_offset, _MAC._gW, _cell_size, 0.f);
+    particleAttributeToGrid(W_offset, _MAC._gW, _cell_size, 0.f);
 }
 
 void FluidSolver::transferVelocitiesToParticles() {
     float smooth = 1.f;
+
+#ifdef USETBB
+    tbb::parallel_invoke(
+            [&]() {
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, _particles.size()),
+                                  [&](const tbb::blocked_range<size_t> &r) {
+                                      for (size_t i = r.begin(); i != r.end(); ++i) {
+                                          FluidParticle &particle = _particles[i];
+                                          float vel = interpolateAttribute(particle.pos, _MAC._gU);
+                                          float oldVel = interpolateAttribute(particle.pos, _MAC._gU_old);
+                                          particle.vel.x = vel*smooth + (particle.vel.x +(vel - oldVel))*(1.f-smooth);
+                                      }
+                                  });
+            },
+            [&]() {
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, _particles.size()),
+                                  [&](const tbb::blocked_range<size_t> &r) {
+                                      for (size_t i = r.begin(); i != r.end(); ++i) {
+                                          FluidParticle &particle = _particles[i];
+                                          float vel = interpolateAttribute(particle.pos, _MAC._gV);
+                                          float oldVel = interpolateAttribute(particle.pos, _MAC._gV_old);
+                                          particle.vel.y = vel*smooth + (particle.vel.y +(vel - oldVel))*(1.f-smooth);
+                                      }
+                                  });
+            },
+            [&]() {
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, _particles.size()),
+                                  [&](const tbb::blocked_range<size_t> &r) {
+                                      for (size_t i = r.begin(); i != r.end(); ++i) {
+                                          FluidParticle &particle = _particles[i];
+                                          float vel = interpolateAttribute(particle.pos, _MAC._gW);
+                                          float oldVel = interpolateAttribute(particle.pos, _MAC._gW_old);
+                                          particle.vel.z = vel*smooth + (particle.vel.z +(vel - oldVel))*(1.f-smooth);
+                                      }
+                                  });
+            }
+    );
+#else
     for (FluidParticle &particle : _particles) {
         float vel = interpolateAttribute(particle.pos, _MAC._gU);
         float oldVel = interpolateAttribute(particle.pos, _MAC._gU_old);
@@ -85,45 +125,78 @@ void FluidSolver::transferVelocitiesToParticles() {
         float vel = interpolateAttribute(particle.pos, _MAC._gV);
         float oldVel = interpolateAttribute(particle.pos, _MAC._gV_old);
         particle.vel.y = vel*smooth + (particle.vel.y +(vel - oldVel))*(1.f-smooth);
-        //std::cout << particle.vel.y << std::endl;
     }
     for (FluidParticle &particle : _particles) {
         float vel = interpolateAttribute(particle.pos, _MAC._gW);
         float oldVel = interpolateAttribute(particle.pos, _MAC._gW_old);
         particle.vel.z = vel*smooth + (particle.vel.z +(vel - oldVel))*(1.f-smooth);
     }
+#endif
 }
 
 void FluidSolver::gravitySolve(float step) {
+#ifdef USETBB
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, _particles.size()), [&](const tbb::blocked_range<size_t> &r) {
+        for (size_t i = r.begin(); i != r.end(); ++i) {
+            FluidParticle &particle = _particles[i];
+            particle.vel.y += g*step;
+        }
+    });
+#else
     for (FluidParticle &particle : _particles) {
         particle.vel.y += g*step;
     }
+#endif
 }
 
 void FluidSolver::updateParticlePositions(float step) {
+
+#ifdef USETBB
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, _particles.size()), [&](const tbb::blocked_range<size_t> &r) {
+        for (size_t i = r.begin(); i != r.end(); ++i) {
+            FluidParticle &particle = _particles[i];
+            particle.pos_old = particle.pos;
+            particle.pos += particle.vel * step;
+        }
+    });
+#else
     for (FluidParticle &particle : _particles) {
         particle.pos_old = particle.pos;
         particle.pos += particle.vel * step;
     }
+#endif
 }
 
 void FluidSolver::resolveCollisions() {
+
+#ifdef USETBB
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, _particles.size()), [&](const tbb::blocked_range<size_t> &r) {
+        for (size_t i = r.begin(); i != r.end(); ++i) {
+            FluidParticle &particle = _particles[i];
+            glm::vec3 normal;
+            if (_container->collides(particle.pos_old, particle.pos, normal)) {
+                particle.col = glm::vec3(1,0,0);
+                glm::vec3 mask = glm::vec3(1,1,1) - glm::abs(normal);
+                particle.vel *= mask;
+                particle.pos = particle.pos_old;
+            }
+        }
+    });
+#else
     for (FluidParticle &particle : _particles) {
         glm::vec3 normal;
         if (_container->collides(particle.pos_old, particle.pos, normal)) {
-            //std::cout << glm::to_string(particle.pos_old) << "; " << glm::to_string(particle.pos) << std::endl;
             particle.col = glm::vec3(1,0,0);
-            glm::vec3 mask = glm::vec3(1,1,1) - normal;
+            glm::vec3 mask = glm::vec3(1,1,1) - glm::abs(normal);
             particle.vel *= mask;
             particle.pos = particle.pos_old;
         }
     }
+#endif
 }
 
 void FluidSolver::updateCells() {
-    _MAC.iterate([&](size_t i, size_t j, size_t k) {
-        _MAC(i,j,k).clear();
-    });
+
     for (FluidParticle &particle : _particles) {
         particle.cell = _MAC.indexOf(particle.pos);
         if (_MAC.checkIdx(particle.cell)) {
@@ -133,6 +206,7 @@ void FluidSolver::updateCells() {
         }
 
     }
+
 }
 
 template<class T> void FluidSolver::particleAttributeToGrid(std::size_t offset, Grid<T> &grid, float radius, T zeroVal) {
@@ -167,7 +241,6 @@ template<class T> void FluidSolver::particleAttributeToGrid(std::size_t offset, 
             grid(I,J,K) = zeroVal;
             return;
         }
-
 
         T temp;
         T gridVal = zeroVal;
@@ -229,15 +302,16 @@ template<class T> T FluidSolver::interpolateAttribute(const glm::vec3 &pos, Grid
         val = (idx.x-i) * j1 + (I-idx.x) * j2;
     }*/
 
-    k1 = MATHIFELSE((idx.z-k) * grid(i,j,k) + (K-idx.z) * grid(i,j,K), grid(i,j,k), k==K);
-    k2 = MATHIFELSE((idx.z-k) * grid(i,J,k) + (K-idx.z) * grid(i,J,K), grid(i,J,k), k==K);
-    k3 = MATHIFELSE((idx.z-k) * grid(I,j,k) + (K-idx.z) * grid(I,j,K), grid(I,j,k), k==K);
-    k4 = MATHIFELSE((idx.z-k) * grid(I,J,k) + (K-idx.z) * grid(i,J,K), grid(I,J,k), k==K);
+    // this is reverse from what is expected because we want smaller value (closer distance) to have larger influence
+    k1 = MATHIFELSE((K-idx.z) * grid(i,j,k) + (idx.z-k) * grid(i,j,K), grid(i,j,k), k==K);
+    k2 = MATHIFELSE((K-idx.z) * grid(i,J,k) + (idx.z-k) * grid(i,J,K), grid(i,J,k), k==K);
+    k3 = MATHIFELSE((K-idx.z) * grid(I,j,k) + (idx.z-k) * grid(I,j,K), grid(I,j,k), k==K);
+    k4 = MATHIFELSE((K-idx.z) * grid(I,J,k) + (idx.z-k) * grid(i,J,K), grid(I,J,k), k==K);
 
-    j1 = MATHIFELSE((idx.y-j) * k1 + (J-idx.y) * k2, k1, j==J);
-    j2 = MATHIFELSE((idx.y-j) * k3 + (J-idx.y) * k4, k3, j==J);
+    j1 = MATHIFELSE((J-idx.y) * k1 + (idx.y-j) * k2, k1, j==J);
+    j2 = MATHIFELSE((J-idx.y) * k3 + (idx.y-j) * k4, k3, j==J);
 
-    val = MATHIFELSE((idx.x-i) * j1 + (I-idx.x) * j2, j1, i==I);
+    val = MATHIFELSE((I-idx.x) * j1 + (idx.x-i) * j2, j1, i==I);
 
     return val;
 }

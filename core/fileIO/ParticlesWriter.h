@@ -15,9 +15,6 @@ public:
     ~ParticlesWriter();
 
     void writeData(const FluidSolver* const solver, const std::string &filename);
-
-private:
-    openvdb::FloatGrid::Ptr grid;
 };
 
 

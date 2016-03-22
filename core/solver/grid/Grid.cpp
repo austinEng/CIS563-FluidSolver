@@ -5,6 +5,8 @@
 #include "Grid.h"
 #include <core/solver/FluidParticle.h>
 
+#include <tbb/parallel_for.h>
+
 template <typename T> Grid<T>::Grid() {
 
 }
@@ -122,20 +124,46 @@ template <typename T> std::size_t Grid<T>::fromIJK(const glm::ivec3 &ijk) const 
 }
 
 template <typename T> void Grid<T>::iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb) {
-    for (size_t i = 0; i < _cellCount.x; i++) {
-        for (size_t j = 0; j < _cellCount.y; j++) {
-            for (size_t k = 0; k < _cellCount.z; k++) {
-                cb(i,j,k);
-            }
-        }
-    }
+#ifdef USETBB
+    parallel_iterate(cb);
+#else
+    serial_iterate(cb);
+#endif
 }
 
 
+template <typename T> void Grid<T>::serial_iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb) {
+    for (size_t idx = 0; idx < _contents.size(); idx++) {
+        glm::ivec3 ijk = toIJK(idx);
+        cb(ijk.x, ijk.y, ijk.z);
+    }
+}
+
+#ifdef USETBB
+template <typename T> void Grid<T>::parallel_iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb) {
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, _contents.size()), [&](const tbb::blocked_range<size_t>& r) {
+         for (size_t i = r.begin(); i != r.end(); ++i) {
+             glm::ivec3 ijk = toIJK(i);
+             cb(ijk.x, ijk.y, ijk.z);
+         }
+    });
+}
+#endif
+
+
+
 template <typename T> void Grid<T>::clear(const T &zeroVal) {
+#ifdef USETBB
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, _contents.size()), [&](const tbb::blocked_range<size_t>& r) {
+        for (size_t i = r.begin(); i != r.end(); ++i) {
+            _contents[i] = zeroVal;
+        }
+    });
+#else
     for (size_t i = 0; i < _contents.size(); i++) {
         _contents[i] = zeroVal;
     }
+#endif
 }
 
 template <typename T> bool Grid<T>::checkIdx(size_t i, size_t j, size_t k) const {
@@ -148,23 +176,5 @@ template <typename T> bool Grid<T>::checkIdx(const glm::ivec3 &idx) const {
 }
 
 
-//template <typename T>  GridIterator<T>::GridIterator(const Grid<T> &grid) : _grid(&grid), _iter(0) {
-//
-//}
-//
-//template <typename T>  bool GridIterator<T>::hasNext() {
-//    return _iter < _grid->_contents.size();
-//}
-//
-//template <typename T> void GridIterator<T>::next(size_t &i, size_t &j, size_t &k) {
-//    i = (_iter % _grid->_cellCount.z);
-//    j = ((_iter / _grid->_cellCount.z) % _grid->_cellCount.y);
-//    k = (_iter / (_grid->_cellCount.y * _grid->_cellCount.z));
-//    ++_iter;
-//}
-
-
-
 template class Grid<float>;
 template class Grid<std::vector<FluidParticle*, std::allocator<FluidParticle*> > >;
-//template class GridIterator<float>;

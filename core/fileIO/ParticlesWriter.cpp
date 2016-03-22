@@ -6,7 +6,6 @@
 
 ParticlesWriter::ParticlesWriter() {
     openvdb::initialize();
-    grid = openvdb::FloatGrid::create();
 }
 
 ParticlesWriter::~ParticlesWriter() {
@@ -14,6 +13,7 @@ ParticlesWriter::~ParticlesWriter() {
 }
 
 void ParticlesWriter::writeData(const FluidSolver* const solver, const std::string &filename) {
+    openvdb::FloatGrid::Ptr grid = openvdb::FloatGrid::create();
     openvdb::FloatGrid::Accessor accessor = grid->getAccessor();
     openvdb::Coord xyz(0, 0, 0);
 
