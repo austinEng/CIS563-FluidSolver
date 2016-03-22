@@ -5,15 +5,13 @@
 const char* default_scene = R"(
 {
     "containerDim" : {
-        "scaleX" : 5.0,
-        "scaleY" : 5.0,
-        "scaleZ" : 5.0
+        "position": [0, 0, 0],
+        "scale" : [1, 2, 1]
     },
     "particleDim" : {
-        "boundX" : 3.7,
-        "boundY" : 3.7,
-        "boundZ" : 3.7
+       "position": [0, 0, 0],
+        "scale" : [1, 1, 1]
     },
-    "particleSeparation" : 0.1
+    "resolution" : 4
 };
 )";

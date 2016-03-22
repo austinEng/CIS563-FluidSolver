@@ -15,13 +15,12 @@ class FluidSolver {
     friend class ParticlesPainter;
     friend class ParticlesWriter;
 public:
-    FluidSolver(float particleSep);
+    FluidSolver(float particleSep, float gridSize);
     ~FluidSolver();
 
     void setContainer(GeoObject* container);
     void addFluid(GeoObject* fluid);
     void init();
-    void writeData(int frame);
 
     void projectVelocitiesToGrid();
     void transferVelocitiesToParticles();
@@ -39,13 +38,10 @@ private:
     std::vector<FluidParticle> _particles;
     float particle_radius;
     float _cell_size;
+    int frame;
 
     template <class T> void particleAttributeToGrid(std::size_t offset, Grid<T> &grid, float radius, T zeroVal);
     template <class T> T interpolateAttribute(const glm::vec3 &pos, Grid<T> &grid);
-
-    void presolve(float step);
-    void solve(float step);
-    void postsolve(float step);
 
     static float g;
 };

@@ -16,7 +16,7 @@
 class Window {
 public:
     Window(const char* title);
-    Window(int w = 640, int h = 480);
+    Window(int w = 1200, int h = 800);
     Window(int w, int h, const char* title);
     ~Window();
     void initloop(std::function<void(void)> predraw = [](){});

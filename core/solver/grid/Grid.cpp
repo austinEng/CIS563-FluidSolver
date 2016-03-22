@@ -13,7 +13,8 @@ template <typename T> Grid<T>::~Grid() {
 
 }
 
-template <typename T> Grid<T>::Grid(const glm::vec3 &offset, const glm::vec3 &dim, float size) :
+template <typename T> Grid<T>::Grid(const glm::vec3 &origin, const glm::vec3 &offset, const glm::vec3 &dim, float size) :
+        _origin(origin),
         _offset(offset),
         _dim(dim),
         _cellSize(size),
@@ -73,36 +74,36 @@ template <typename T> const T& Grid<T>::at(float x, float y, float z) const {
 }
 
 template <typename T> T& Grid<T>::at(const glm::vec3 &pos) {
-    glm::vec3 indices = (pos - _offset) / _cellSize;
+    glm::ivec3 indices = indexOf(pos);
     return this->operator()((size_t) indices.x, (size_t) indices.y, (size_t) indices.z);
 }
 
 template <typename T> const T& Grid<T>::at(const glm::vec3 &pos) const {
-    glm::vec3 indices = (pos - _offset) / _cellSize;
+    glm::ivec3 indices = indexOf(pos);
     return this->operator()((size_t) indices.x, (size_t) indices.y, (size_t) indices.z);
 }
 
 template <typename T> glm::ivec3 Grid<T>::indexOf(const glm::vec3 &pos) const {
-    glm::vec3 indices = (pos - _offset) / _cellSize;
+    glm::vec3 indices = (pos - _offset - _origin) / _cellSize;
     int i = (int) indices.x;
     int j = (int) indices.y;
     int k = (int) indices.z;
-    if (i >= _cellCount.x ) i = -1;
-    if (j >= _cellCount.y ) j = -1;
-    if (k >= _cellCount.z ) k = -1;
-    return glm::ivec3(i, j, k);
+    //if (i >= _cellCount.x ) i = -1;
+    //if (j >= _cellCount.y ) j = -1;
+    //if (k >= _cellCount.z ) k = -1;
+    return glm::clamp(glm::ivec3(i, j, k), glm::ivec3(0,0,0), _cellCount);
 }
 
 template <typename T> glm::vec3 Grid<T>::positionOf(const glm::ivec3 &idx) const {
-    return glm::vec3(idx.x * _cellSize, idx.y * _cellSize, idx.z * _cellSize) + _offset;
+    return glm::vec3(idx.x * _cellSize, idx.y * _cellSize, idx.z * _cellSize) + _offset + _origin;
 }
 
 template <typename T> glm::vec3 Grid<T>::positionOf(size_t i, size_t j, size_t k) const {
-    return glm::vec3(i * _cellSize, j * _cellSize, k * _cellSize) + _offset;
+    return glm::vec3(i * _cellSize, j * _cellSize, k * _cellSize) + _offset + _origin;
 }
 
 template <typename T> glm::vec3 Grid<T>::fractionalIndexOf(const glm::vec3 &pos) const {
-    return (pos - _offset) / _cellSize;
+    return glm::clamp((pos - _offset - _origin) / _cellSize, glm::vec3(0,0,0), glm::vec3(_cellCount));
 }
 
 template <typename T> glm::ivec3 Grid<T>::toIJK(const std::size_t index) const {
@@ -130,10 +131,20 @@ template <typename T> void Grid<T>::iterate(const std::function<void(size_t i, s
     }
 }
 
+
 template <typename T> void Grid<T>::clear(const T &zeroVal) {
     for (size_t i = 0; i < _contents.size(); i++) {
         _contents[i] = zeroVal;
     }
+}
+
+template <typename T> bool Grid<T>::checkIdx(size_t i, size_t j, size_t k) const {
+    return i >= 0 && i < _cellCount.x &&
+            j >= 0 && j < _cellCount.y &&
+            k >= 0 && k < _cellCount.z;
+}
+template <typename T> bool Grid<T>::checkIdx(const glm::ivec3 &idx) const {
+    return checkIdx((size_t) idx.x, (size_t) idx.y, (size_t) idx.z);
 }
 
 

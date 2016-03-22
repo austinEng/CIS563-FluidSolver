@@ -12,7 +12,7 @@ static void error_callback(int error, const char* description) {
 
 InputHandler &inputHandler = InputHandler::getInputHandler();
 
-Window::Window(const char *title) : Window(640, 480, title) { }
+Window::Window(const char *title) : Window(1200, 800, title) { }
 Window::Window(int w, int h) : Window(w, h, "GL Window"){ }
 Window::Window(int w, int h, const char* title) : _window(nullptr), camera(w, h), _w(w), _h(h),
     loadSceneCB(NULL) {

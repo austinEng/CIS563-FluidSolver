@@ -40,23 +40,28 @@ FluidSolver* SceneLoader::LoadScene(const std::string &jsonstring) {
 FluidSolver* SceneLoader::parseJson(const Json::Value &root) {
     Json::Value containerDim = root["containerDim"];
     Json::Value particleDim = root["particleDim"];
-    Json::Value particleSeparation = root["particleSeparation"];
+    Json::Value resolution = root["resolution"];
 
-    float containerX = containerDim["scaleX"].asFloat();
-    float containerY = containerDim["scaleY"].asFloat();
-    float containerZ = containerDim["scaleZ"].asFloat();
+    glm::vec3 containerSize(containerDim["scale"][0].asFloat(),
+                            containerDim["scale"][1].asFloat(),
+                            containerDim["scale"][2].asFloat());
+    glm::vec3 containerPos(containerDim["position"][0].asFloat(),
+                           containerDim["position"][1].asFloat(),
+                           containerDim["position"][2].asFloat());
 
-    float particleX = particleDim["boundX"].asFloat();
-    float particleY = particleDim["boundY"].asFloat();
-    float particleZ = particleDim["boundZ"].asFloat();
+    glm::vec3 fluidSize(particleDim["scale"][0].asFloat(),
+                        particleDim["scale"][1].asFloat(),
+                        particleDim["scale"][2].asFloat());
+    glm::vec3 fluidPos(particleDim["position"][0].asFloat(),
+                       particleDim["position"][1].asFloat(),
+                       particleDim["position"][2].asFloat());
 
-    float particleSep = particleSeparation.asFloat();
+    float cellSize = std::max(std::max(containerSize.x, containerSize.y), containerSize.z) / resolution.asFloat();
 
-    glm::vec3 origin;
-    Box* container = new Box(origin, containerX, containerY, containerZ);
-    Box* fluidObject = new Box(origin, particleX, particleY, particleZ);
+    Box* container = new Box(containerPos, containerSize);
+    Box* fluidObject = new Box(fluidPos, fluidSize);
 
-    FluidSolver* solver = new FluidSolver(particleSep);
+    FluidSolver* solver = new FluidSolver(cellSize/2, cellSize);
     solver->setContainer(container);
     solver->addFluid(fluidObject);
     return solver;

@@ -1,0 +1,14 @@
+//
+// Created by austin on 3/22/16.
+//
+
+#ifndef FLUIDSOLVER_GRIDATTRIBUTEPAINTER_H
+#define FLUIDSOLVER_GRIDATTRIBUTEPAINTER_H
+
+
+class GridAttributePainter {
+
+};
+
+
+#endif //FLUIDSOLVER_GRIDATTRIBUTEPAINTER_H

@@ -105,7 +105,7 @@ set(CORE_SRC
         core/solver/FluidSolver.cpp
         core/solver/FluidSolver.h
         core/util/math.h
-        core/display/shaders/particle.frag.h core/display/shaders/particle.vert.h core/display/painters/ParticlesPainter.cpp core/display/painters/ParticlesPainter.h core/display/painters/Painter.cpp core/display/painters/Painter.h core/display/painters/BoxPainter.cpp core/display/painters/BoxPainter.h core/display/shaders/flat.vert.h core/display/shaders/flat.frag.h core/scenes/default.h core/camera/Camera.cpp core/camera/Camera.h core/solver/grid/Grid.cpp core/solver/grid/Grid.h core/solver/grid/MACGrid.cpp core/solver/grid/MACGrid.h core/solver/FluidParticle.h core/fileIO/ParticlesWriter.cpp core/fileIO/ParticlesWriter.h)
+        core/display/shaders/particle.frag.h core/display/shaders/particle.vert.h core/display/painters/ParticlesPainter.cpp core/display/painters/ParticlesPainter.h core/display/painters/Painter.cpp core/display/painters/Painter.h core/display/painters/BoxPainter.cpp core/display/painters/BoxPainter.h core/display/shaders/flat.vert.h core/display/shaders/flat.frag.h core/scenes/default.h core/camera/Camera.cpp core/camera/Camera.h core/solver/grid/Grid.cpp core/solver/grid/Grid.h core/solver/grid/MACGrid.cpp core/solver/grid/MACGrid.h core/solver/FluidParticle.h core/fileIO/ParticlesWriter.cpp core/fileIO/ParticlesWriter.h core/util/hacks.h core/display/painters/GridAttributePainter.cpp core/display/painters/GridAttributePainter.h)
 
 add_executable(FluidSolver ${CORE_SRC})
 target_link_libraries(FluidSolver ${CORE_LIBS})

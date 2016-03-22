@@ -12,7 +12,7 @@
 template <typename T> class Grid {
 public:
     Grid();
-    Grid(const glm::vec3 &offset, const glm::vec3 &dim, float size);
+    Grid(const glm::vec3 &origin, const glm::vec3 &offset, const glm::vec3 &dim, float size);
 
     T& operator()(std::size_t idx);
     const T& operator()(std::size_t idx) const;
@@ -42,10 +42,14 @@ public:
     void iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb);
     void clear(const T &zeroVal);
 
+    bool checkIdx(size_t i, size_t j, size_t k) const;
+    bool checkIdx(const glm::ivec3 &idx) const;
+
     virtual ~Grid();
 
 private:
     std::vector<T> _contents;
+    glm::vec3 _origin;
     glm::vec3 _offset;
     glm::vec3 _dim;
     float _cellSize;
