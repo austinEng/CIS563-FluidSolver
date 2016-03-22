@@ -108,7 +108,7 @@ template <typename T> glm::vec3 Grid<T>::fractionalIndexOf(const glm::vec3 &pos)
 
 template <typename T> glm::ivec3 Grid<T>::toIJK(const std::size_t index) const {
     int i = (int) (index % _cellCount.z);
-    int j = (int) ((index / _cellCount.z) & _cellCount.y);
+    int j = (int) ((index / _cellCount.z) % _cellCount.y);
     int k = (int) (index / (_cellCount.y * _cellCount.z));
     return glm::ivec3(i,j,k);
 }
@@ -148,6 +148,23 @@ template <typename T> bool Grid<T>::checkIdx(const glm::ivec3 &idx) const {
 }
 
 
+//template <typename T>  GridIterator<T>::GridIterator(const Grid<T> &grid) : _grid(&grid), _iter(0) {
+//
+//}
+//
+//template <typename T>  bool GridIterator<T>::hasNext() {
+//    return _iter < _grid->_contents.size();
+//}
+//
+//template <typename T> void GridIterator<T>::next(size_t &i, size_t &j, size_t &k) {
+//    i = (_iter % _grid->_cellCount.z);
+//    j = ((_iter / _grid->_cellCount.z) % _grid->_cellCount.y);
+//    k = (_iter / (_grid->_cellCount.y * _grid->_cellCount.z));
+//    ++_iter;
+//}
+
+
 
 template class Grid<float>;
 template class Grid<std::vector<FluidParticle*, std::allocator<FluidParticle*> > >;
+//template class GridIterator<float>;

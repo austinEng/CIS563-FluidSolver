@@ -2,6 +2,9 @@
 // Created by austin on 2/28/16.
 //
 
+#ifndef FLUIDSOLVER_PARTICLE_VERT_H
+#define FLUIDSOLVER_PARTICLE_VERT_H
+
 const char* particle_vert = R"(
 #version 150
 
@@ -18,3 +21,5 @@ void main() {
     gl_Position = u_viewProj * vec4(v_pos, 1);
 }
 )";
+
+#endif

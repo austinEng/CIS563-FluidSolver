@@ -69,9 +69,9 @@ void FluidSolver::projectVelocitiesToGrid() {
     _MAC._gU_old = _MAC._gU;
     _MAC._gV_old = _MAC._gV;
     _MAC._gW_old = _MAC._gW;
-    particleAttributeToGrid(U_offset, _MAC._gU, _cell_size, 0.f);
+    //particleAttributeToGrid(U_offset, _MAC._gU, _cell_size, 0.f);
     particleAttributeToGrid(V_offset, _MAC._gV, _cell_size, 0.f);
-    particleAttributeToGrid(W_offset, _MAC._gW, _cell_size, 0.f);
+    //particleAttributeToGrid(W_offset, _MAC._gW, _cell_size, 0.f);
 }
 
 void FluidSolver::transferVelocitiesToParticles() {
@@ -126,11 +126,12 @@ void FluidSolver::updateCells() {
     });
     for (FluidParticle &particle : _particles) {
         particle.cell = _MAC.indexOf(particle.pos);
-        if (particle.cell.x < 0 || particle.cell.y < 0 || particle.cell.z < 0) {
-            std::cerr << "particle out of bounds" << std::endl;
-        } else {
+        if (_MAC.checkIdx(particle.cell)) {
             _MAC(particle.cell).push_back(&particle);
+        } else {
+            //std::cerr << "particle out of bounds" << std::endl;
         }
+
     }
 }
 
@@ -139,12 +140,14 @@ template<class T> void FluidSolver::particleAttributeToGrid(std::size_t offset, 
     std::size_t cellRadius = (size_t) glm::ceil(radius / _cell_size);
 
     grid.iterate([&](size_t I, size_t J, size_t K) {
+
         glm::vec3 gridPos = grid.positionOf(I,J,K);
 
         float totalDist = 0;
         size_t startI = MATHIFELSE(I - cellRadius, I, I == 0);
         size_t startJ = MATHIFELSE(J - cellRadius, J, J == 0);
         size_t startK = MATHIFELSE(K - cellRadius, K, K == 0);
+
         for (size_t i = startI; i <= I + cellRadius; i++) {
             for (size_t j = startJ; j <= J + cellRadius; j++) {
                 for (size_t k = startK; k <= K + cellRadius; k++) {
@@ -160,14 +163,19 @@ template<class T> void FluidSolver::particleAttributeToGrid(std::size_t offset, 
             }
         }
 
+        if (totalDist == 0) {
+            grid(I,J,K) = zeroVal;
+            return;
+        }
+
 
         T temp;
         T gridVal = zeroVal;
-        for (size_t i = I - cellRadius; i <= I + cellRadius; i++) {
-            for (size_t j = J - cellRadius; j <= J + cellRadius; j++) {
-                for (size_t k = K - cellRadius; k <= K + cellRadius; k++) {
-                    if (_MAC.checkIdx(i,j,k)) {
-                        for (FluidParticle *particle : _MAC(i, j, k)) {
+        for (size_t i = startI; i <= I + cellRadius; i++) {
+            for (size_t j = startJ; j <= J + cellRadius; j++) {
+                for (size_t k = startK; k <= K + cellRadius; k++) {
+                    if (_MAC.checkIdx(i, j, k)) {
+                        for (FluidParticle *particle : _MAC(i,j,k)) {
                             float dist = glm::distance(particle->pos, gridPos);
                             if (dist < radius) {
                                 void *address = (void *) particle + offset;
@@ -192,22 +200,6 @@ template<class T> T FluidSolver::interpolateAttribute(const glm::vec3 &pos, Grid
     size_t I = (size_t) ceil(idx.x);
     size_t J = (size_t) ceil(idx.y);
     size_t K = (size_t) ceil(idx.z);
-
-    /*float divisor = 1.f;
-    if (K-k != 0.f) divisor = K-k;
-    T k1 = (idx.z-k) / divisor * grid(i,j,k) + (K-idx.z) / divisor * grid(i,j,K);
-    T k2 = (idx.z-k) / divisor * grid(i,J,k) + (K-idx.z) / divisor * grid(i,J,K);
-    T k3 = (idx.z-k) / divisor * grid(I,j,k) + (K-idx.z) / divisor * grid(I,j,K);
-    T k4 = (idx.z-k) / divisor * grid(I,J,k) + (K-idx.z) / divisor * grid(I,J,K);
-
-    divisor = 1.f;
-    if (J-j != 0.f) divisor = J-j;
-    T j1 = (idx.y-j) / divisor * k1 + (J-idx.y) / divisor * k2;
-    T j2 = (idx.y-j) / divisor * k3 + (J-idx.y) / divisor * k4;
-
-    divisor = 1.f;
-    if (I-i != 0.f) divisor = I-i;
-    T val = (idx.x-i) / divisor * j1 + (I-idx.x) / divisor * j2;*/
 
     T k1, k2, k3, k4, j1, j2, val;
 
@@ -251,39 +243,12 @@ template<class T> T FluidSolver::interpolateAttribute(const glm::vec3 &pos, Grid
 }
 
 void FluidSolver::update(float step) {
-    /*std::cout << "================PARTICLE COUNT===============" << std::endl;
-    _MAC.iterate([&](size_t i, size_t j, size_t k) {
-        std::cout << i << "," << j << "," << k << "; " << _MAC(i,j,k).size() << std::endl;
-    });
-
     projectVelocitiesToGrid();
-
-    std::cout << "================U VELOCITY===============" << std::endl;
-    _MAC._gU.iterate([&](size_t i, size_t j, size_t k) {
-        std::cout << i << "," << j << "," << k << "; " << _MAC._gU(i,j,k) << std::endl;
-    });
-    std::cout << "================V VELOCITY===============" << std::endl;
-    _MAC._gV.iterate([&](size_t i, size_t j, size_t k) {
-        std::cout << i << "," << j << "," << k << "; " << _MAC._gV(i,j,k) << std::endl;
-    });
-    std::cout << "================W VELOCITY===============" << std::endl;
-    _MAC._gW.iterate([&](size_t i, size_t j, size_t k) {
-        std::cout << i << "," << j << "," << k << "; " << _MAC._gW(i,j,k) << std::endl;
-    });*/
-
     transferVelocitiesToParticles();
-
-    /*std::cout << "================PARTICLE VELOCITY===============" << std::endl;
-    for (FluidParticle &particle : _particles) {
-        std::cout << glm::to_string(particle.pos) << "; " << glm::to_string(particle.vel) << std::endl;
-    }*/
-
     gravitySolve(step);
     updateParticlePositions(step);
     resolveCollisions();
     updateCells();
-
-
 
     frame++;
 }

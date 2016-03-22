@@ -7,7 +7,7 @@
 #include <core/display/shaders/particle.vert.h>
 
 ParticlesPainter::ParticlesPainter(FluidSolver* solver, float ptSize) : _ptSize(ptSize), _particles(&solver->_particles) {
-    MAX_PARTICLES = _particles->size();
+    MAX_PARTICLES = (unsigned int) _particles->size();
 
     // compile shaders
     GLuint particleVert = compileShader(particle_vert, GL_VERTEX_SHADER);

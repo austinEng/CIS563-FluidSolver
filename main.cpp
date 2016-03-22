@@ -2,6 +2,7 @@
 #include <core/fileIO/SceneLoader.h>
 #include <core/fileIO/ParticlesWriter.h>
 #include <core/display/painters/ParticlesPainter.h>
+#include <core/display/painters/GridVectorAttributePainter.h>
 #include <core/display/painters/BoxPainter.h>
 
 int main(int argc, char* argv[]) {
@@ -15,9 +16,15 @@ int main(int argc, char* argv[]) {
 
     ParticlesPainter particlesPainter(solver);
     BoxPainter boxPainter((Box *) solver->_container);
+    GridVectorAttributePainter uPainter (&solver->_MAC._gU, 3.f, glm::vec3(1,0,0), glm::vec3(0.1,0,0));
+    GridVectorAttributePainter vPainter (&solver->_MAC._gV, 3.f, glm::vec3(0,1,0), glm::vec3(0,0.1,0));
+    GridVectorAttributePainter wPainter (&solver->_MAC._gW, 3.f, glm::vec3(0,0,1), glm::vec3(0,0,0.1));
 
     window->addPainter(&particlesPainter);
     window->addPainter(&boxPainter);
+    window->addPainter(&uPainter);
+    window->addPainter(&vPainter);
+    window->addPainter(&wPainter);
 
     window->loadSceneCB = [](void*) {
         std::cout << "what" << std::endl;

@@ -10,6 +10,7 @@
 #include <functional>
 
 template <typename T> class Grid {
+    friend class GridVectorAttributePainter;
 public:
     Grid();
     Grid(const glm::vec3 &origin, const glm::vec3 &offset, const glm::vec3 &dim, float size);
@@ -55,6 +56,5 @@ private:
     float _cellSize;
     glm::ivec3 _cellCount;
 };
-
 
 #endif //FLUIDSOLVER_GRID_H

@@ -6,12 +6,12 @@ const char* default_scene = R"(
 {
     "containerDim" : {
         "position": [0, 0, 0],
-        "scale" : [1, 2, 1]
+        "scale" : [10, 20, 10]
     },
     "particleDim" : {
-       "position": [0, 0, 0],
-        "scale" : [1, 1, 1]
+       "position": [0, 5, 0],
+        "scale" : [10, 10, 10]
     },
-    "resolution" : 4
+    "resolution" : 20
 };
 )";

@@ -5,7 +5,7 @@
 #include "Camera.h"
 
 Camera::Camera(int w, int h) :
-        zoom(10),
+        zoom(25),
         eye(glm::vec3(0,0,zoom)),
         tgt(glm::vec3(0,0,0)),
         width(w),
@@ -18,6 +18,11 @@ Camera::Camera(int w, int h) :
         right(glm::cross(look, world_up)),
         up(glm::cross(right, look)),
         rotation(glm::mat4(1.f)) {
+
+    rotation = glm::rotate(rotation, -PI/6, glm::vec3(1,0,0));
+    rotation = glm::rotate(rotation, -PI/4, glm::vec3(0,1,0));
+
+    recomputeEye();
     recompute();
 }
 
