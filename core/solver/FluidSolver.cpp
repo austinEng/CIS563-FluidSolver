@@ -6,6 +6,7 @@
 #include "FluidSolver.h"
 #include <core/util/hacks.h>
 #include <tbb/parallel_for.h>
+#include <core/util/flags.h>
 #include <tbb/parallel_invoke.h>
 #include <tbb/parallel_reduce.h>
 
@@ -30,7 +31,7 @@ void FluidSolver::addFluid(GeoObject *fluid) {
     for (float x = b.minX(); x < b.maxX(); x += particle_radius) {
         for (float y = b.minY(); y < b.maxY(); y += particle_radius) {
             for (float z = b.minZ(); z < b.maxZ(); z += particle_radius) {
-                glm::vec3 pos = glm::vec3(x, y, z);
+                glm::vec3 pos = glm::vec3(x, y, z) + glm::vec3(_cell_size)/2.f;
                 if (fluid->contains(pos)) {
                     FluidParticle p;
                     p.pos = pos;
@@ -216,10 +217,10 @@ template<class T> void FluidSolver::particleAttributeToGrid(std::size_t offset, 
     std::size_t attributeSize = sizeof(T);
     std::size_t cellRadius = (size_t) glm::ceil(radius / _cell_size);
 
-    grid.clear(zeroVal);
+    /*grid.clear(zeroVal);
     Grid<float> distGrid(grid);
 
-    /*iterParticles([&](FluidParticle &particle) {
+    iterParticles([&](FluidParticle &particle) {
         size_t I,J,K;
         grid.indexOf(particle.pos, I, J, K);
         glm::vec3 gridPos = distGrid.positionOf(I,J,K);
@@ -248,22 +249,32 @@ template<class T> void FluidSolver::particleAttributeToGrid(std::size_t offset, 
 
         glm::vec3 gridPos = grid.positionOf(I,J,K);
 
-        float totalDist = 0;
-        size_t startI = MATHIFELSE(I - cellRadius, I, I == 0);
-        size_t startJ = MATHIFELSE(J - cellRadius, J, J == 0);
-        size_t startK = MATHIFELSE(K - cellRadius, K, K == 0);
+        size_t si, ei, sj, ej, sk, ek;
+        _MAC.getNeighboorhood(I, J, K, cellRadius, si, ei, sj, ej, sk, ek);
 
-        for (size_t i = startI; i <= I + cellRadius; i++) {
-            for (size_t j = startJ; j <= J + cellRadius; j++) {
-                for (size_t k = startK; k <= K + cellRadius; k++) {
-                    if (_MAC.checkIdx(i,j,k)) {
-                        for (FluidParticle* particle : _MAC(i,j,k)) {
-                            float dist = glm::distance(particle->pos, gridPos);
-                            if (dist < radius) {
-                                totalDist += dist;
-                            }
+        float totalDist = 0.f;
+        for (size_t i = si; i < ei; i++) {
+            for (size_t j = sj; j < ej; j++) {
+                for (size_t k = sk; k < ek; k++) {
+#ifdef USETBB
+                    typedef std::vector<FluidParticle*>::iterator range_iterator;
+                    totalDist += tbb::parallel_reduce(
+                            tbb::blocked_range<range_iterator>(_MAC(i,j,k).begin(), _MAC(i,j,k).end(), 20), 0.f,
+                            [&](const tbb::blocked_range<range_iterator> &r, float init)->T {
+                                for (range_iterator p = r.begin(); p != r.end(); p++) {
+                                    float dist = glm::distance((*p)->pos, gridPos);
+                                    init += dist * (dist < radius);
+                                }
+                                return init;
+                            }, std::plus<float>());
+#else
+                    for (FluidParticle* particle : _MAC(i,j,k)) {
+                        float dist = glm::distance(particle->pos, gridPos);
+                        if (dist < radius) {
+                            totalDist += dist;
                         }
                     }
+#endif
                 }
             }
         }
@@ -275,22 +286,20 @@ template<class T> void FluidSolver::particleAttributeToGrid(std::size_t offset, 
 
         T temp;
         T gridVal = zeroVal;
-        for (size_t i = startI; i <= I + cellRadius; i++) {
-            for (size_t j = startJ; j <= J + cellRadius; j++) {
-                for (size_t k = startK; k <= K + cellRadius; k++) {
-                    if (_MAC.checkIdx(i, j, k)) {
-                        for (FluidParticle *particle : _MAC(i,j,k)) {
-                            float dist = glm::distance(particle->pos, gridPos);
-                            if (dist < radius) {
-                                void *address = (void *) particle + offset;
-                                std::memcpy(&temp, address, attributeSize);
-                                gridVal += temp * dist / totalDist;
-                            }
-                        }
+        for (size_t i = si; i < ei; i++) {
+            for (size_t j = sj; j < ej; j++) {
+                for (size_t k = sk; k < ek; k++) {
+                    for (FluidParticle *particle : _MAC(i,j,k)) {
+                        float dist = glm::distance(particle->pos, gridPos);
+                        void *address = (void *) particle + offset;
+                        std::memcpy(&temp, address, attributeSize);
+                        gridVal += temp * (dist / totalDist) * (dist < radius);
                     }
                 }
             }
         }
+
+
 
         grid(I,J,K) = gridVal;
     });

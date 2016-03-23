@@ -46,6 +46,7 @@ public:
     void iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb, bool parallel=true);
 
     void iterateNeighborhood(size_t i, size_t j, size_t k, size_t r, const std::function<void(size_t i, size_t j, size_t k)> &cb, bool parallel=true);
+    void getNeighboorhood(size_t i, size_t j, size_t k, size_t r, size_t &si, size_t &ei, size_t &sj, size_t &ej, size_t &sk, size_t &ek);
 
     void clear(const T &zeroVal);
 

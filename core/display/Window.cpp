@@ -242,7 +242,6 @@ void Window::initloop(std::function<void(void)> predraw) {
 
     glfwDestroyWindow(_window);
     glfwTerminate();
-    exit(EXIT_SUCCESS);
 }
 
 void Window::handleMouseInput(InputHandler::MouseState &mouseState) {

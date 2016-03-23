@@ -4,6 +4,7 @@
 #include <core/display/painters/ParticlesPainter.h>
 #include <core/display/painters/GridVectorAttributePainter.h>
 #include <core/display/painters/BoxPainter.h>
+#include <ctime>
 
 int main(int argc, char* argv[]) {
     Window* window = new Window("Fluid Solver");
@@ -35,6 +36,8 @@ int main(int argc, char* argv[]) {
     double start = glfwGetTime();
     int frame = 0;
 
+    float totalComputeTime = 0;
+
     window->initloop([&]() {
         double now = glfwGetTime();
         float duration = (float) (now - start);
@@ -44,6 +47,7 @@ int main(int argc, char* argv[]) {
             start = now;
             //solver->update(duration);
             solver->update(1.f / framerate);
+            totalComputeTime += glfwGetTime() - start;
 
             std::string filename = "particles_";
             filename.append(std::to_string(++frame));
@@ -51,6 +55,8 @@ int main(int argc, char* argv[]) {
             particlesWriter.writeData(solver, filename);
         }
     });
+
+    std::cout << "Average compute time: " << totalComputeTime / frame << " seconds" << std::endl;
 
     delete window;
 

@@ -23,9 +23,9 @@ template <typename T> Grid<T>::Grid(const glm::vec3 &origin, const glm::vec3 &of
         _offset(offset),
         _dim(dim),
         _cellSize(size),
-        _countX((size_t) ((_dim.x - _offset.x) / _cellSize)),
-        _countY((size_t) ((_dim.y - _offset.y) / _cellSize)),
-        _countZ((size_t) ((_dim.z - _offset.z) / _cellSize)) {
+        _countX((size_t) (std::ceil((_dim.x - _offset.x) / _cellSize))),
+        _countY((size_t) (std::ceil((_dim.y - _offset.y) / _cellSize))),
+        _countZ((size_t) (std::ceil((_dim.z - _offset.z) / _cellSize))) {
     _contents = std::vector<T>((unsigned long) (_countX * _countY * _countZ));
 }
 
@@ -109,7 +109,7 @@ template <typename T> glm::ivec3 Grid<T>::indexOf(const glm::vec3 &pos) const {
     //if (i >= _countX ) i = -1;
     //if (j >= _countY ) j = -1;
     //if (k >= _countZ ) k = -1;
-    return glm::clamp(glm::ivec3(i, j, k), glm::ivec3(0,0,0), glm::ivec3(_countX, _countY, _countZ));
+    return glm::clamp(glm::ivec3(i, j, k), glm::ivec3(0,0,0), glm::ivec3(_countX-1, _countY-1, _countZ-1));
 }
 
 template <typename T> void Grid<T>::indexOf(const glm::vec3 &pos, size_t &i, size_t &j, size_t &k) const {
@@ -211,6 +211,15 @@ template <typename T> void Grid<T>::iterateNeighborhood(size_t i, size_t j, size
         }
     }
 #endif
+}
+
+template <typename T> void Grid<T>::getNeighboorhood(size_t i, size_t j, size_t k, size_t r, size_t &si, size_t &ei, size_t &sj, size_t &ej, size_t &sk, size_t &ek) {
+    si = MATHIFELSE(i - r, 0, i == 0);
+    sj = MATHIFELSE(j - r, 0, j == 0);
+    sk = MATHIFELSE(k - r, 0, k == 0);
+    ei = std::min(i+r+1, _countX); //MATHIFELSE(i + r, _countX, i + r >= _countX);
+    ej = std::min(j+r+1, _countY); //MATHIFELSE(j + r, _countY, j + r >= _countY);
+    ek = std::min(k+r+1, _countZ); //MATHIFELSE(k + r, _countZ, k + r >= _countZ);
 }
 
 

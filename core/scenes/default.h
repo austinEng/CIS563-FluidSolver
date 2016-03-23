@@ -12,6 +12,6 @@ const char* default_scene = R"(
        "position": [0, 5, 0],
         "scale" : [10, 10, 10]
     },
-    "resolution" : 10
+    "resolution" : 20
 };
 )";
