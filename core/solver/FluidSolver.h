@@ -43,6 +43,8 @@ private:
     template <class T> void particleAttributeToGrid(std::size_t offset, Grid<T> &grid, float radius, T zeroVal);
     template <class T> T interpolateAttribute(const glm::vec3 &pos, Grid<T> &grid);
 
+    void iterParticles(const std::function<void(FluidParticle &particle)> &cb, bool parallel=true);
+
     static float g;
 };
 

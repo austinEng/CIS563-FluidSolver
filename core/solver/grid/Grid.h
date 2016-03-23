@@ -15,6 +15,7 @@ template <typename T> class Grid {
 public:
     Grid();
     Grid(const glm::vec3 &origin, const glm::vec3 &offset, const glm::vec3 &dim, float size);
+    template <typename C> Grid(const Grid<C> &rhs);
 
     T& operator()(std::size_t idx);
     const T& operator()(std::size_t idx) const;
@@ -33,6 +34,7 @@ public:
     const T& at(const glm::vec3 &pos) const;
 
     glm::ivec3 indexOf(const glm::vec3 &pos) const;
+    void indexOf(const glm::vec3 &pos, size_t &i, size_t &j, size_t &k) const;
     glm::vec3 positionOf(const glm::ivec3 &idx) const;
     glm::vec3 positionOf(size_t i, size_t j, size_t k) const;
     glm::vec3 fractionalIndexOf(const glm::vec3 &pos) const;
@@ -41,11 +43,9 @@ public:
     std::size_t fromIJK(const std::size_t i, const std::size_t j, const std::size_t k) const;
     std::size_t fromIJK(const glm::ivec3 &ijk) const;
 
-    void iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb);
-    void serial_iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb);
-#ifdef USETBB
-    void parallel_iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb);
-#endif
+    void iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb, bool parallel=true);
+
+    void iterateNeighborhood(size_t i, size_t j, size_t k, size_t r, const std::function<void(size_t i, size_t j, size_t k)> &cb, bool parallel=true);
 
     void clear(const T &zeroVal);
 
@@ -60,7 +60,9 @@ private:
     glm::vec3 _offset;
     glm::vec3 _dim;
     float _cellSize;
-    glm::ivec3 _cellCount;
+    size_t _countX;
+    size_t _countY;
+    size_t _countZ;
 };
 
 #endif //FLUIDSOLVER_GRID_H

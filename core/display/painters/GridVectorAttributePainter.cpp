@@ -49,7 +49,8 @@ GridVectorAttributePainter::GridVectorAttributePainter(Grid<float> *grid,
     // set grid uniforms
     glUseProgram(prog);
     glUniform1f(unifCellSize, grid->_cellSize);
-    glUniform3iv(unifCellCount, 1, &(grid->_cellCount.x));
+    glm::ivec3 count = glm::ivec3(grid->_countX, grid->_countY, grid->_countZ);
+    glUniform3iv(unifCellCount, 1, &(count.x));
     glm::vec3 o = grid->_origin + grid->_offset;
     glUniform3fv(unifOrigin, 1, &(o[0]));
     glUniform3fv(unifCol, 1, &(color[0]));

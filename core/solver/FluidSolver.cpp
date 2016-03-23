@@ -7,6 +7,7 @@
 #include <core/util/hacks.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_invoke.h>
+#include <tbb/parallel_reduce.h>
 
 float FluidSolver::g = -9.80665f;
 
@@ -135,6 +136,7 @@ void FluidSolver::transferVelocitiesToParticles() {
 }
 
 void FluidSolver::gravitySolve(float step) {
+
 #ifdef USETBB
     tbb::parallel_for(tbb::blocked_range<size_t>(0, _particles.size()), [&](const tbb::blocked_range<size_t> &r) {
         for (size_t i = r.begin(); i != r.end(); ++i) {
@@ -147,6 +149,7 @@ void FluidSolver::gravitySolve(float step) {
         particle.vel.y += g*step;
     }
 #endif
+
 }
 
 void FluidSolver::updateParticlePositions(float step) {
@@ -212,6 +215,34 @@ void FluidSolver::updateCells() {
 template<class T> void FluidSolver::particleAttributeToGrid(std::size_t offset, Grid<T> &grid, float radius, T zeroVal) {
     std::size_t attributeSize = sizeof(T);
     std::size_t cellRadius = (size_t) glm::ceil(radius / _cell_size);
+
+    grid.clear(zeroVal);
+    Grid<float> distGrid(grid);
+
+    /*iterParticles([&](FluidParticle &particle) {
+        size_t I,J,K;
+        grid.indexOf(particle.pos, I, J, K);
+        glm::vec3 gridPos = distGrid.positionOf(I,J,K);
+
+        distGrid.iterateNeighborhood(I,J,K,cellRadius, [&](size_t i, size_t j, size_t k) {
+            float dist = glm::distance(particle.pos, gridPos);
+            distGrid(i,j,k) += dist * (dist < radius);
+        }, false);
+    }, false);
+
+    iterParticles([&](FluidParticle &particle) {
+        size_t I,J,K;
+        grid.indexOf(particle.pos, I, J, K);
+        glm::vec3 gridPos = distGrid.positionOf(I,J,K);
+
+        distGrid.iterateNeighborhood(I,J,K,cellRadius, [&](size_t i, size_t j, size_t k) {
+            float dist = glm::distance(particle.pos, gridPos);
+            T temp;
+            void *address = (void *) &particle + offset;
+            std::memcpy(&temp, address, attributeSize);
+            grid(i,j,k) += temp * (dist / distGrid(i,j,k)) * (dist < radius);
+        }, false);
+    }, false);*/
 
     grid.iterate([&](size_t I, size_t J, size_t K) {
 
@@ -318,6 +349,7 @@ template<class T> T FluidSolver::interpolateAttribute(const glm::vec3 &pos, Grid
 
 void FluidSolver::update(float step) {
     projectVelocitiesToGrid();
+    // pressure solve
     transferVelocitiesToParticles();
     gravitySolve(step);
     updateParticlePositions(step);
@@ -325,4 +357,25 @@ void FluidSolver::update(float step) {
     updateCells();
 
     frame++;
+}
+
+void FluidSolver::iterParticles(const std::function<void(FluidParticle &particle)> &cb, bool parallel) {
+#ifdef USETBB
+    if (parallel) {
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, _particles.size()), [&](const tbb::blocked_range<size_t> &r) {
+            for (size_t i = r.begin(); i != r.end(); ++i) {
+                FluidParticle &particle = _particles[i];
+                cb(particle);
+            }
+        });
+    } else {
+        for (FluidParticle &particle : _particles) {
+            cb(particle);
+        }
+    }
+#else
+    for (FluidParticle &particle : _particles) {
+        cb(particle);
+    }
+#endif
 }

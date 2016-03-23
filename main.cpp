@@ -41,7 +41,6 @@ int main(int argc, char* argv[]) {
 
         // limit solver update to 24fps
         if (duration >= 1.f / framerate) {
-            std::cout << duration << std::endl;
             start = now;
             //solver->update(duration);
             solver->update(1.f / framerate);
