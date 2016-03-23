@@ -13,7 +13,16 @@ First steps toward building a fluid solver.
 
 ### Scene Loading
 
-Does a simple parsing with jsoncpp to create two box objects
+Scenes are loaded by passing a path to the scene file as the first program argument.
+It does a simple parsing with jsoncpp to create objects.
+
+* containerDim: size and position of the container
+* particleDim: size and position of initial fluid object
+* resolution: number of grid divisions on the largest axis
+
+#### AntTweakBar
+
+I've added AntTweakBar, but haven't gotten around to having it do anything yet. I also don't have a MAC so I was unable to compile the libraries for it.
 
 ### Geometry
 
@@ -28,9 +37,23 @@ All information is stored in a temporary buffer which is swapped with the partic
 
 ### Drawing
 
-A Painter class is used to define the functionality of the BoxPainter and ParticlesPainter. Each sets up their own shaders on initialization and implement methods to draw their respective objects.
+A Painter class is used to define the drawing behavior of various elements in the scene. Each sets up their own shaders on initialization and implement methods to draw their respective objects.
 I found it much nicer to isolate my code this way so that I didn't have a billion gl calls in my geometry classes and a billion gl calls in my Window class.
 Shaders are stored as char arrays in header files. I found that the easiest way to package them with my code.
 
 The Window sets up a glfw window and a Singleton instance of InputHandler. glfw doesn't let you have non-static callback functions so I instead have callback functions to update the state of my static InputHandler which the Window can subscribe to.
 From there, I can get the window/keyboard/mouse data and do the approriate camera calculations.
+
+## Parallelization:
+
+TBB is used heavily to parallelize calculations on the particles and grid. This can be toggled on/off by defining/undefining USETBB in <core/util/flags.h>.
+
+For the default scene, the parallelized code computes each frame in an average of 0.0494588 seconds. Without TBB, this is 0.0768101 seconds.
+
+## OpenVDB:
+
+Currently, each frame is written out as "particles_{frame}.vdb" in the current directory
+
+## Known Problems:
+
+There seems to be an edge indexing problem in the attribute transfer from grid to particle
