@@ -24,6 +24,7 @@ public:
 
     void projectVelocitiesToGrid();
     void transferVelocitiesToParticles();
+    void enforceBoundary();
     void gravitySolve(float step);
     void updateParticlePositions(float step);
     void resolveCollisions();

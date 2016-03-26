@@ -6,10 +6,18 @@
 #define FLUIDSOLVER_MACGRID_H
 
 #include "Grid.h"
+#include <core/util/flags.h>
+
+enum CellType {
+    EMPTY,
+    FLUID,
+    SOLID
+};
 
 template <typename T> class MACGrid : public Grid<T> {
     friend class FluidSolver;
 public:
+
     MACGrid();
     MACGrid(const glm::vec3 &origin, const glm::vec3 &dim, float size);
     virtual ~MACGrid();
@@ -21,6 +29,7 @@ public:
     Grid<float> _gV_old;
     Grid<float> _gW_old;
     Grid<float> _gP;
+    Grid<int> _gType;
 
 private:
     std::vector<T> _contents;

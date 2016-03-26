@@ -28,7 +28,7 @@ template <typename T> Grid<T>::Grid(const glm::vec3 &origin, const glm::vec3 &of
         _countZ((size_t) (std::ceil((_dim.z - _offset.z) / _cellSize))) {
     _contents = std::vector<T>((unsigned long) (_countX * _countY * _countZ));
 }
-
+/*
 template <typename T> template <typename C> Grid<T>::Grid(const Grid<C> &rhs) :
         _origin(rhs._origin), 
         _offset(rhs._offset), 
@@ -38,7 +38,7 @@ template <typename T> template <typename C> Grid<T>::Grid(const Grid<C> &rhs) :
         _countY(rhs._countY),
         _countZ(rhs._countZ) {
     _contents = std::vector<T>((unsigned long) (_countX * _countY * _countZ));
-}
+}*/
 
 template <typename T> T& Grid<T>::operator()(std::size_t idx) {
     return _contents[idx];
@@ -173,6 +173,38 @@ template <typename T> void Grid<T>::iterate(const std::function<void(size_t i, s
 #endif
 }
 
+template <typename T> void Grid<T>::iterateRegion(size_t i, size_t j, size_t k, size_t I, size_t J, size_t K, const std::function<void(size_t i, size_t j, size_t k)> &cb, bool parallel) {
+#ifdef USETBB
+    if (parallel) {
+        tbb::parallel_for(tbb::blocked_range3d<size_t>(i,j,k,I,J,K), [&](const tbb::blocked_range3d<size_t> &r) {
+            for(size_t ii=r.pages().begin(), i_end=r.pages().end(); ii<i_end; ii++){
+                for (size_t jj=r.rows().begin(), j_end=r.rows().end(); jj<j_end; jj++){
+                    for (size_t kk=r.cols().begin(), k_end=r.cols().end(); kk<k_end; kk++){
+                        cb(ii,jj,kk);
+                    }
+                }
+            }
+        });
+    } else {
+        for (size_t ii = i; ii < I; ii++) {
+            for (size_t jj = j; jj < J; jj++) {
+                for (size_t kk = k; kk < K; kk++) {
+                    cb(ii,jj,kk);
+                }
+            }
+        }
+    }
+#else
+    for (size_t ii = i; ii < I; ii++) {
+        for (size_t jj = j; jj < J; jj++) {
+            for (size_t kk = k; kk < K; kk++) {
+                cb(ii,jj,kk);
+            }
+        }
+    }
+#endif
+}
+
 template <typename T> void Grid<T>::iterateNeighborhood(size_t i, size_t j, size_t k, size_t r, const std::function<void(size_t i, size_t j, size_t k)> &cb, bool parallel) {
     size_t si = MATHIFELSE(i - r, 0, i == 0);
     size_t sj = MATHIFELSE(j - r, 0, j == 0);
@@ -187,7 +219,6 @@ template <typename T> void Grid<T>::iterateNeighborhood(size_t i, size_t j, size
             for(size_t i=r.pages().begin(), i_end=r.pages().end(); i<i_end; i++){
                 for (size_t j=r.rows().begin(), j_end=r.rows().end(); j<j_end; j++){
                     for (size_t k=r.cols().begin(), k_end=r.cols().end(); k<k_end; k++){
-                        std::cout << i << "," << j << "," << k << std::endl;
                         cb(i,j,k);
                     }
                 }
@@ -246,6 +277,21 @@ template <typename T> bool Grid<T>::checkIdx(const glm::ivec3 &idx) const {
     return checkIdx((size_t) idx.x, (size_t) idx.y, (size_t) idx.z);
 }
 
+template <typename T> size_t Grid<T>::countX() const {
+    return _countX;
+}
+
+template <typename T> size_t Grid<T>::countY() const {
+    return _countY;
+}
+
+template <typename T> size_t Grid<T>::countZ() const {
+    return _countZ;
+}
+
+
 
 template class Grid<float>;
+template class Grid<int>;
 template class Grid<std::vector<FluidParticle*, std::allocator<FluidParticle*> > >;
+

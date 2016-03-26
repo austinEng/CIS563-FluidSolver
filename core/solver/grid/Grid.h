@@ -15,7 +15,7 @@ template <typename T> class Grid {
 public:
     Grid();
     Grid(const glm::vec3 &origin, const glm::vec3 &offset, const glm::vec3 &dim, float size);
-    template <typename C> Grid(const Grid<C> &rhs);
+    //template <typename C> Grid(const Grid<C> &rhs);
 
     T& operator()(std::size_t idx);
     const T& operator()(std::size_t idx) const;
@@ -44,6 +44,7 @@ public:
     std::size_t fromIJK(const glm::ivec3 &ijk) const;
 
     void iterate(const std::function<void(size_t i, size_t j, size_t k)> &cb, bool parallel=true);
+    void iterateRegion(size_t i, size_t j, size_t k, size_t I, size_t J, size_t K, const std::function<void(size_t i, size_t j, size_t k)> &cb, bool parallel=true);
 
     void iterateNeighborhood(size_t i, size_t j, size_t k, size_t r, const std::function<void(size_t i, size_t j, size_t k)> &cb, bool parallel=true);
     void getNeighboorhood(size_t i, size_t j, size_t k, size_t r, size_t &si, size_t &ei, size_t &sj, size_t &ej, size_t &sk, size_t &ek);
@@ -52,6 +53,10 @@ public:
 
     bool checkIdx(size_t i, size_t j, size_t k) const;
     bool checkIdx(const glm::ivec3 &idx) const;
+
+    size_t countX() const;
+    size_t countY() const;
+    size_t countZ() const;
 
     virtual ~Grid();
 
