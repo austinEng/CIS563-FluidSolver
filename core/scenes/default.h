@@ -9,9 +9,9 @@ const char* default_scene = R"(
         "scale" : [10, 20, 10]
     },
     "particleDim" : {
-       "position": [0, 5, 0],
+       "position": [0, 4, 0],
         "scale" : [10, 10, 10]
     },
-    "resolution" : 20
+    "resolution" : 10
 };
 )";

@@ -70,7 +70,7 @@ endif()
 
 # set compiler flags for c++11
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -m64 -msse2 -w")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O0 -m64 -msse2 -w")
 elseif(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
@@ -105,7 +105,7 @@ set(CORE_SRC
         core/solver/FluidSolver.cpp
         core/solver/FluidSolver.h
         core/util/math.h
-        core/display/shaders/particle.frag.h core/display/shaders/particle.vert.h core/display/painters/ParticlesPainter.cpp core/display/painters/ParticlesPainter.h core/display/painters/Painter.cpp core/display/painters/Painter.h core/display/painters/BoxPainter.cpp core/display/painters/BoxPainter.h core/display/shaders/flat.vert.h core/display/shaders/flat.frag.h core/scenes/default.h core/camera/Camera.cpp core/camera/Camera.h core/solver/grid/Grid.cpp core/solver/grid/Grid.h core/solver/grid/MACGrid.cpp core/solver/grid/MACGrid.h core/solver/FluidParticle.h core/fileIO/ParticlesWriter.cpp core/fileIO/ParticlesWriter.h core/util/hacks.h core/display/painters/GridVectorAttributePainter.cpp core/display/painters/GridVectorAttributePainter.h core/display/shaders/gridAttr.geo.h core/util/flags.h)
+        core/display/shaders/particle.frag.h core/display/shaders/particle.vert.h core/display/painters/ParticlesPainter.cpp core/display/painters/ParticlesPainter.h core/display/painters/Painter.cpp core/display/painters/Painter.h core/display/painters/BoxPainter.cpp core/display/painters/BoxPainter.h core/display/shaders/flat.vert.h core/display/shaders/flat.frag.h core/scenes/default.h core/camera/Camera.cpp core/camera/Camera.h core/solver/grid/Grid.cpp core/solver/grid/Grid.h core/solver/grid/MACGrid.cpp core/solver/grid/MACGrid.h core/solver/FluidParticle.h core/fileIO/ParticlesWriter.cpp core/fileIO/ParticlesWriter.h core/util/hacks.h core/display/painters/GridVectorAttributePainter.cpp core/display/painters/GridVectorAttributePainter.h core/display/shaders/gridAttr.geo.h core/util/flags.h core/display/painters/GridScalarAttributePainter.cpp core/display/painters/GridScalarAttributePainter.h core/display/shaders/gridScal.vert.h core/display/shaders/gridScal.frag.h)
 
 add_executable(FluidSolver ${CORE_SRC})
 target_link_libraries(FluidSolver ${CORE_LIBS})

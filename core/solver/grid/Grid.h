@@ -11,7 +11,9 @@
 #include <core/util/flags.h>
 
 template <typename T> class Grid {
+    friend class GridIterator;
     friend class GridVectorAttributePainter;
+    friend class GridScalarAttributePainter;
 public:
     Grid();
     Grid(const glm::vec3 &origin, const glm::vec3 &offset, const glm::vec3 &dim, float size);
@@ -40,6 +42,7 @@ public:
     glm::vec3 fractionalIndexOf(const glm::vec3 &pos) const;
 
     glm::ivec3 toIJK(const std::size_t index) const;
+    void toIJK(const std::size_t index, size_t &i, size_t &j, size_t &k) const;
     std::size_t fromIJK(const std::size_t i, const std::size_t j, const std::size_t k) const;
     std::size_t fromIJK(const glm::ivec3 &ijk) const;
 
@@ -57,6 +60,7 @@ public:
     size_t countX() const;
     size_t countY() const;
     size_t countZ() const;
+    size_t size() const;
 
     virtual ~Grid();
 

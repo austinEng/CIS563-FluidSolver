@@ -23,9 +23,12 @@ template <typename T> Grid<T>::Grid(const glm::vec3 &origin, const glm::vec3 &of
         _offset(offset),
         _dim(dim),
         _cellSize(size),
-        _countX((size_t) (std::ceil((_dim.x - _offset.x) / _cellSize))),
-        _countY((size_t) (std::ceil((_dim.y - _offset.y) / _cellSize))),
-        _countZ((size_t) (std::ceil((_dim.z - _offset.z) / _cellSize))) {
+        //_countX((size_t) (std::ceil((_dim.x - _offset.x) / _cellSize))),
+        //_countY((size_t) (std::ceil((_dim.y - _offset.y) / _cellSize))),
+        //_countZ((size_t) (std::ceil((_dim.z - _offset.z) / _cellSize))) {
+        _countX((size_t) (std::ceil((_dim.x) / _cellSize))),
+        _countY((size_t) (std::ceil((_dim.y) / _cellSize))),
+        _countZ((size_t) (std::ceil((_dim.z) / _cellSize))) {
     _contents = std::vector<T>((unsigned long) (_countX * _countY * _countZ));
 }
 /*
@@ -116,7 +119,7 @@ template <typename T> void Grid<T>::indexOf(const glm::vec3 &pos, size_t &i, siz
     glm::vec3 indices = (pos - _offset - _origin) / _cellSize;
     i = (size_t) ((indices.x <= _countX) * indices.x + (indices.x > _countX) * _countX); // clamp at countX
     j = (size_t) ((indices.y <= _countY) * indices.y + (indices.y > _countY) * _countY); // clamp at countY
-    k = (size_t) ((indices.x <= _countZ) * indices.z + (indices.z > _countZ) * _countZ); // clamp at countZ
+    k = (size_t) ((indices.z <= _countZ) * indices.z + (indices.z > _countZ) * _countZ); // clamp at countZ
     i = (i > 0) * i;
     j = (j > 0) * j;
     k = (k > 0) * k;
@@ -140,6 +143,12 @@ template <typename T> glm::ivec3 Grid<T>::toIJK(const std::size_t index) const {
     int j = (int) ((index / _countZ) % _countY);
     int k = (int) (index / (_countY * _countZ));
     return glm::ivec3(i,j,k);
+}
+
+template <typename T> void Grid<T>::toIJK(const std::size_t index, size_t &i, size_t &j, size_t &k) const {
+    i = (index % _countZ);
+    j = ((index / _countZ) % _countY);
+    k = (index / (_countY * _countZ));
 }
 
 template <typename T> std::size_t Grid<T>::fromIJK(const std::size_t i, const std::size_t j, const std::size_t k) const {
@@ -175,8 +184,9 @@ template <typename T> void Grid<T>::iterate(const std::function<void(size_t i, s
 
 template <typename T> void Grid<T>::iterateRegion(size_t i, size_t j, size_t k, size_t I, size_t J, size_t K, const std::function<void(size_t i, size_t j, size_t k)> &cb, bool parallel) {
 #ifdef USETBB
+    tbb::blocked_range3d<size_t> test(i,j,k,I,J,K);
     if (parallel) {
-        tbb::parallel_for(tbb::blocked_range3d<size_t>(i,j,k,I,J,K), [&](const tbb::blocked_range3d<size_t> &r) {
+        tbb::parallel_for(tbb::blocked_range3d<size_t>(i,I,j,J,k,K), [&](const tbb::blocked_range3d<size_t> &r) {
             for(size_t ii=r.pages().begin(), i_end=r.pages().end(); ii<i_end; ii++){
                 for (size_t jj=r.rows().begin(), j_end=r.rows().end(); jj<j_end; jj++){
                     for (size_t kk=r.cols().begin(), k_end=r.cols().end(); kk<k_end; kk++){
@@ -245,9 +255,9 @@ template <typename T> void Grid<T>::iterateNeighborhood(size_t i, size_t j, size
 }
 
 template <typename T> void Grid<T>::getNeighboorhood(size_t i, size_t j, size_t k, size_t r, size_t &si, size_t &ei, size_t &sj, size_t &ej, size_t &sk, size_t &ek) {
-    si = MATHIFELSE(i - r, 0, i == 0);
-    sj = MATHIFELSE(j - r, 0, j == 0);
-    sk = MATHIFELSE(k - r, 0, k == 0);
+    si = MATHIFELSE(i - r, 0, i - r > i);
+    sj = MATHIFELSE(j - r, 0, j - r > j);
+    sk = MATHIFELSE(k - r, 0, k - r > k);
     ei = std::min(i+r+1, _countX); //MATHIFELSE(i + r, _countX, i + r >= _countX);
     ej = std::min(j+r+1, _countY); //MATHIFELSE(j + r, _countY, j + r >= _countY);
     ek = std::min(k+r+1, _countZ); //MATHIFELSE(k + r, _countZ, k + r >= _countZ);
@@ -289,9 +299,10 @@ template <typename T> size_t Grid<T>::countZ() const {
     return _countZ;
 }
 
-
+template <typename T> size_t Grid<T>::size() const {
+    return _contents.size();
+}
 
 template class Grid<float>;
 template class Grid<int>;
 template class Grid<std::vector<FluidParticle*, std::allocator<FluidParticle*> > >;
-

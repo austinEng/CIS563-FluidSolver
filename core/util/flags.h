@@ -8,4 +8,4 @@
 #endif //FLUIDSOLVER_FLAGS_H
 
 #define USETBB
-#define SPLATTING
+//#define SPLATTING
