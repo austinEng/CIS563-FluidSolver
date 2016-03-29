@@ -22,14 +22,14 @@ int main(int argc, char* argv[]) {
     GridVectorAttributePainter vPainter (&solver->_MAC._gV, 3.f, glm::vec3(0,1,0), glm::vec3(0,0.1,0));
     GridVectorAttributePainter wPainter (&solver->_MAC._gW, 3.f, glm::vec3(0,0,1), glm::vec3(0,0,0.1));
     GridScalarAttributePainter tPainter (
-            &solver->_MAC._gType, 0.f, 2.f, 0.f, 2.f, glm::vec3(1,1,1), glm::vec3(0,0,0.1));
+            &solver->_MAC._gType, 0.f, 2.f, 2.f, 4.f, glm::vec3(1,1,1), glm::vec3(0,0,0.1));
 
     window->addPainter(&particlesPainter);
     window->addPainter(&boxPainter);
     window->addPainter(&uPainter);
     window->addPainter(&vPainter);
     window->addPainter(&wPainter);
-    window->addPainter(&tPainter);
+    //window->addPainter(&tPainter);
 
     window->loadSceneCB = [](void*) {
         std::cout << "what" << std::endl;

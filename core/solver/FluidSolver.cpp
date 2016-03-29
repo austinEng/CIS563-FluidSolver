@@ -103,7 +103,7 @@ void FluidSolver::projectVelocitiesToGrid() {
 }
 
 void FluidSolver::transferVelocitiesToParticles() {
-    float smooth = 0.15f;
+    float smooth = 0.05f;
 
 #ifdef USETBB
     tbb::parallel_invoke(
@@ -161,86 +161,26 @@ void FluidSolver::transferVelocitiesToParticles() {
 }
 
 void FluidSolver::enforceBoundary() {
-
-#ifdef USETBB
-    tbb::parallel_invoke(
-        [&]() {
-            _MAC._gU.iterateRegion(0, 0, 0,
-                                   1, _MAC._gU.countY(), _MAC._gU.countZ(), [&](size_t i, size_t j, size_t k) {
-                _MAC._gU(i,j,k) = 0.f;
-            });
-        },
-        [&]() {
-            _MAC._gU.iterateRegion(_MAC._gU.countX()-1, 0, 0,
-                                   _MAC._gU.countX(), _MAC._gU.countY(), _MAC._gU.countZ(), [&](size_t i, size_t j, size_t k) {
-                _MAC._gU(i,j,k) = 0.f;
-            });
-        },
-        [&]() {
-            _MAC._gV.iterateRegion(0, 0, 0,
-                                   _MAC._gV.countX(), 1, _MAC._gV.countZ(), [&](size_t i, size_t j, size_t k) {
-                _MAC._gV(i,j,k) = 0.f;
-            });
-        },
-        [&]() {
-            _MAC._gV.iterateRegion(0, _MAC._gV.countY()-1, 0,
-                                   _MAC._gV.countX(), _MAC._gV.countY(), _MAC._gV.countZ(), [&](size_t i, size_t j, size_t k) {
-                _MAC._gV(i,j,k) = 0.f;
-            });
-        },
-        [&]() {
-            _MAC._gW.iterateRegion(0, 0, 0,
-                                   _MAC._gW.countX(), _MAC._gW.countY(), 1, [&](size_t i, size_t j, size_t k) {
-                _MAC._gW(i,j,k) = 0.f;
-            });
-        },
-        [&]() {
-            _MAC._gW.iterateRegion(0, 0, _MAC._gW.countZ()-1,
-                                   _MAC._gW.countX(), _MAC._gW.countY(), _MAC._gW.countZ(), [&](size_t i, size_t j, size_t k) {
-                _MAC._gW(i,j,k) = 0.f;
-            });
+    _MAC._gType.iterate([&](size_t i, size_t j, size_t k) {
+        switch (_MAC._gType(i,j,k)) {
+            case EMPTY:break;
+            case FLUID:break;
+            case SOLID:
+                size_t si, ei, sj, ej, sk, ek;
+                _MAC._gType.getNeighboorhood(i,j,k,1,si,ei,sj,ej,sk,ek);
+                _MAC._gU(i,j,k) = std::min(_MAC._gU(i,j,k), 0.f);
+                _MAC._gU(ei-1,j,k) = std::max(_MAC._gU(ei-1,j,k), 0.f);
+                _MAC._gV(i,j,k) = std::min(_MAC._gV(i,j,k), 0.f);
+                _MAC._gV(i,ej-1,k) = std::max(_MAC._gV(i,ej-1,k), 0.f);
+                _MAC._gW(i,j,k) = std::min(_MAC._gW(i,j,k), 0.f);
+                _MAC._gW(i,j,k-1) = std::max(_MAC._gW(i,j,k-1), 0.f);
+                break;
+            default:break;
         }
-    );
-#else
-    _MAC._gU.iterateRegion(0, 0, 0, 1, _MAC._gU.countY(), _MAC._gU.countZ(), [&](size_t i, size_t j, size_t k) {
-        _MAC._gU(i,j,k) = 0.f;
     });
-    _MAC._gU.iterateRegion(_MAC._gU.countX()-1, 0, 0, _MAC._gU.countX(), _MAC._gU.countY(), _MAC._gU.countZ(), [&](size_t i, size_t j, size_t k) {
-        _MAC._gU(i,j,k) = 0.f;
-    });
-    _MAC._gV.iterateRegion(0, 0, 0, _MAC._gV.countX(), 1, _MAC._gV.countZ(), [&](size_t i, size_t j, size_t k) {
-        //_MAC._gV_old(i,j,k) = _MAC._gV(i,j,k);
-        _MAC._gV(i,j,k) = 0.f;
-    });
-    _MAC._gV.iterateRegion(0, _MAC._gV.countY()-1, 0, _MAC._gV.countX(), _MAC._gV.countY(), _MAC._gV.countZ(), [&](size_t i, size_t j, size_t k) {
-        //_MAC._gV_old(i,j,k) = _MAC._gV(i,j,k);
-        //_MAC._gV(i,j,k) = 0.f;
-    });
-    _MAC._gW.iterateRegion(0, 0, 0, _MAC._gW.countX(), _MAC._gW.countY(), 1, [&](size_t i, size_t j, size_t k) {
-        _MAC._gW(i,j,k) = 0.f;
-    });
-    _MAC._gW.iterateRegion(0, 0, _MAC._gW.countZ()-1, _MAC._gW.countX(), _MAC._gW.countY(), _MAC._gW.countZ(), [&](size_t i, size_t j, size_t k) {
-        _MAC._gW(i,j,k) = 0.f;
-    });
-#endif
-
 }
 
 void FluidSolver::gravitySolve(float step) {
-/*
-#ifdef USETBB
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, _particles.size()), [&](const tbb::blocked_range<size_t> &r) {
-        for (size_t i = r.begin(); i != r.end(); ++i) {
-            FluidParticle &particle = _particles[i];
-            particle.vel.y += g*step;
-        }
-    });
-#else
-    for (FluidParticle &particle : _particles) {
-        particle.vel.y += g*step;
-    }
-#endif
-*/
     _MAC._gV.iterate([&](size_t i, size_t j, size_t k) {
         _MAC._gV(i,j,k) += g*step;
     });
@@ -285,7 +225,7 @@ void FluidSolver::resolveCollisions() {
         if (_container->collides(particle.pos_old, particle.pos, normal)) {
             particle.col = glm::vec3(1,0,0);
             glm::vec3 mask = glm::vec3(1,1,1) - glm::abs(normal);
-            //particle.vel *= mask;
+            particle.vel *= mask;
             particle.pos = particle.pos_old;
         }
     }
@@ -294,8 +234,10 @@ void FluidSolver::resolveCollisions() {
 
 void FluidSolver::updateCells() {
     _MAC.clear(std::vector<FluidParticle*>());
+    _MAC._gType.clear(EMPTY);
     for (FluidParticle &particle : _particles) {
         particle.cell = _MAC.indexOf(particle.pos);
+        _MAC._gType(particle.cell) = FLUID;
         if (_MAC.checkIdx(particle.cell)) {
             _MAC(particle.cell).push_back(&particle);
         } else {
@@ -304,20 +246,21 @@ void FluidSolver::updateCells() {
 
     }
 
+    std::function<void(size_t, size_t, size_t)> setSolid = [&](size_t i, size_t j, size_t k) {
+        _MAC._gType(i,j,k) = SOLID;
+    };
+
+    _MAC._gType.iterateRegion(0,0,0, 1,_MAC._gType.countY(),_MAC._gType.countZ(), setSolid);
+    _MAC._gType.iterateRegion(_MAC._gType.countX()-1,0,0, _MAC._gType.countX(),_MAC._gType.countY(),_MAC._gType.countZ(), setSolid);
+    _MAC._gType.iterateRegion(0,0,0, _MAC._gType.countX(),1,_MAC._gType.countZ(), setSolid);
+    _MAC._gType.iterateRegion(0,_MAC._gType.countY()-1,0, _MAC._gType.countX(),_MAC._gType.countY(),_MAC._gType.countZ(), setSolid);
+    _MAC._gType.iterateRegion(0,0,0, _MAC._gType.countX(),_MAC._gType.countY(),1, setSolid);
+    _MAC._gType.iterateRegion(0,0,_MAC._gType.countZ()-1, _MAC._gType.countX(),_MAC._gType.countY(),_MAC._gType.countZ(), setSolid);
+
 }
 
 float kernel(float r, float h) {
     float e = r/h;
-    /*float w;
-    if (0 <= e && e <=1) {
-        w = 1.f - 3.f/2.f * e*e  + 3.f/4.f * e*e*e;
-    } else if (1 <= e && e <= 2) {
-        w = 1.f/4.f * (2-e)*(2-e)*(2-e);
-    } else {
-        w = 0;
-    }
-    return 1.f/(PI*h*h*h)*w;*/
-
     return 1.f/(PI*h*h*h) * MATHIFELSE(
             1.f - 3.f/2.f * e*e  + 3.f/4.f * e*e*e,
             MATHIFELSE(
@@ -335,9 +278,8 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
     std::size_t cellRadius = (size_t) glm::ceil(radius / _cell_size);
 
 #ifdef SPLATTING // if splatting
-    /*grid.clear(zeroVal);
-    std::vector<float> distances;
-    distances.resize(grid.countX() * grid.countY() * grid.countZ());
+    grid.clear(zeroVal);
+    std::vector<float> distances(grid.countX() * grid.countY() * grid.countZ());
 
     iterParticles([&](FluidParticle &particle) {
         size_t I,J,K;
@@ -364,10 +306,9 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
             std::memcpy(&temp, address, attributeSize);
             grid(i,j,k) += temp * (dist / distances[idx]) * (dist < radius);
         });
-    }, false);*/
+    }, false);
 
 #else // else splatting
-
 
 /*#ifdef USETBB
     tbb::parallel_for(tbb::blocked_range<size_t>(0, grid.size()), [&](const tbb::blocked_range<size_t> &r) {
@@ -432,7 +373,7 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
 
         float totalWeight = 0.f;
 //#define TOOMUCH
-#ifdef TOOMUCH // if toomuch
+#ifdef TOOMUCH
         totalWeight += tbb::parallel_reduce(
             tbb::blocked_range3d<size_t>(si,ei,sj,ej,sk,ek), 0.f,
             [&](const tbb::blocked_range3d<size_t> &r, float init)->float {
@@ -442,7 +383,7 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
                             typedef std::vector<FluidParticle*>::iterator range_iterator;
                             init += tbb::parallel_reduce(
                                     tbb::blocked_range<range_iterator>(_MAC(i,j,k).begin(), _MAC(i,j,k).end()), 0.f,
-                                    [&](const tbb::blocked_range<range_iterator> &r2, float init2)->T {
+                                    [&](const tbb::blocked_range<range_iterator> &r2, float init2)->float {
                                         for (range_iterator p = r2.begin(); p != r2.end(); p++) {
                                             FluidParticle* particle = *p;
                                             float dist = glm::distance(particle->pos, gridPos);
@@ -452,11 +393,6 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
                                         return init2;
                                     }, std::plus<float>()
                             );
-                            for (FluidParticle const* particle : _MAC(i,j,k)) {
-                                float dist = glm::distance(particle->pos, gridPos);
-                                float weight = kernel(dist, radius/2.f);
-                                init += weight;
-                            }
                         }
                     }
                 }
@@ -464,36 +400,53 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
             },
             std::plus<float>()
         );
-#else   // else toomuch
 
+        T gridVal = zeroVal;
+        gridVal += tbb::parallel_reduce(
+                tbb::blocked_range3d<size_t>(si,ei,sj,ej,sk,ek), 0.f,
+                [&](const tbb::blocked_range3d<size_t> &r, float init)->T {
+                    for(size_t i=r.pages().begin(), i_end=r.pages().end(); i<i_end; i++){
+                        for (size_t j=r.rows().begin(), j_end=r.rows().end(); j<j_end; j++){
+                            for (size_t k=r.cols().begin(), k_end=r.cols().end(); k<k_end; k++){
+                                typedef std::vector<FluidParticle*>::iterator range_iterator;
+                                init += tbb::parallel_reduce(
+                                        tbb::blocked_range<range_iterator>(_MAC(i,j,k).begin(), _MAC(i,j,k).end()), 0.f,
+                                        [&](const tbb::blocked_range<range_iterator> &r2, float init2)->T {
+                                            for (range_iterator p = r2.begin(); p != r2.end(); p++) {
+                                                FluidParticle* particle = *p;
+                                                float dist = glm::distance(particle->pos, gridPos);
+                                                float weight = kernel(dist, radius/2.f);
+                                                T temp;
+                                                void *address = (void *) particle + offset;
+                                                std::memcpy(&temp, address, attributeSize);
+                                                init2 += temp * (weight / totalWeight);
+                                            }
+                                            return init2;
+                                        }, std::plus<T>()
+                                );
+                            }
+                        }
+                    }
+                    return init;
+                },
+                std::plus<float>()
+        );
+
+        grid(I,J,K) = gridVal;
+
+#else
         for (size_t i = si; i < ei; i++) {
             for (size_t j = sj; j < ej; j++) {
                 for (size_t k = sk; k < ek; k++) {
-#ifdef USETB
-                    typedef std::vector<FluidParticle*>::iterator range_iterator;
-                    totalWeight += tbb::parallel_reduce(
-                            tbb::blocked_range<range_iterator>(_MAC(i,j,k).begin(), _MAC(i,j,k).end()), 0.f,
-                            [&](const tbb::blocked_range<range_iterator> &r, float init)->T {
-                                for (range_iterator p = r.begin(); p != r.end(); p++) {
-                                    FluidParticle* particle = *p;
-                                    float dist = glm::distance(particle->pos, gridPos);
-                                    float weight = kernel(dist, radius/2.f);
-                                    init += weight;
-                                }
-                                return init;
-                            }, std::plus<float>()
-                    );
-#else
-                    for (FluidParticle const* particle : _MAC(i,j,k)) {
+                    for (FluidParticle const *particle : _MAC(i, j, k)) {
                         float dist = glm::distance(particle->pos, gridPos);
-                        float weight = kernel(dist, radius/2.f);
+                        float weight = kernel(dist, radius / 2.f);
                         totalWeight += weight;
                     }
-#endif
                 }
             }
         }
-#endif // endif toomuch
+
         if (totalWeight == 0) {
             grid(I,J,K) = zeroVal;
             return;
@@ -504,38 +457,21 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
         for (size_t i = si; i < ei; i++) {
             for (size_t j = sj; j < ej; j++) {
                 for (size_t k = sk; k < ek; k++) {
-#ifdef USETB
-                    typedef std::vector<FluidParticle*>::iterator range_iterator;
-                    gridVal += tbb::parallel_reduce(
-                            tbb::blocked_range<range_iterator>(_MAC(i,j,k).begin(), _MAC(i,j,k).end()), 0.f,
-                            [&](const tbb::blocked_range<range_iterator> &r, float init)->T {
-                                for (range_iterator p = r.begin(); p != r.end(); p++) {
-                                    FluidParticle* particle = *p;
-                                    float dist = glm::distance(particle->pos, gridPos);
-                                    float weight = kernel(dist, radius/2.f);
-                                    T tempVar;
-                                    void *address = (void *) particle + offset;
-                                    std::memcpy(&tempVar, address, attributeSize);
-                                    init += tempVar * (weight/totalWeight);
-                                }
-                                return init;
-                            }, std::plus<T>()
-                    );
-#else
-                    for (FluidParticle const* particle : _MAC(i,j,k)) {
+                    for (FluidParticle const *particle : _MAC(i, j, k)) {
                         float dist = glm::distance(particle->pos, gridPos);
-                        float weight = kernel(dist, radius/2.f);
+                        float weight = kernel(dist, radius / 2.f);
                         void *address = (void *) particle + offset;
                         std::memcpy(&temp, address, attributeSize);
                         gridVal += temp * (weight / totalWeight);
                     }
-#endif
                 }
             }
         }
 
         grid(I,J,K) = gridVal;
+#endif
     });
+
 #endif // endif splatting
 }
 
@@ -550,32 +486,6 @@ template<typename T> T FluidSolver::interpolateAttribute(const glm::vec3 &pos, G
 
     T k1, k2, k3, k4, j1, j2, val;
 
-    /*if (k == K) {
-        k1 = grid(i,j,k);
-        k2 = grid(i,J,k);
-        k3 = grid(I,j,k);
-        k4 = grid(I,J,k);
-    } else {
-        k1 = (idx.z-k) * grid(i,j,k) + (K-idx.z) * grid(i,j,K);
-        k2 = (idx.z-k) * grid(i,J,k) + (K-idx.z) * grid(i,J,K);
-        k3 = (idx.z-k) * grid(I,j,k) + (K-idx.z) * grid(I,j,K);
-        k4 = (idx.z-k) * grid(I,J,k) + (K-idx.z) * grid(I,J,K);
-    }
-
-    if (j == J) {
-        j1 = k1;
-        j2 = k3;
-    } else {
-        j1 = (idx.y-j) * k1 + (J-idx.y) * k2;
-        j2 = (idx.y-j) * k3 + (J-idx.y) * k4;
-    }
-
-    if (i == I) {
-        val = j1;
-    } else {
-        val = (idx.x-i) * j1 + (I-idx.x) * j2;
-    }*/
-
     // this is reverse from what is expected because we want smaller value (closer distance) to have larger influence
     k1 = MATHIFELSE((K-idx.z) * grid(i,j,k) + (idx.z-k) * grid(i,j,K), grid(i,j,k), k==K);
     k2 = MATHIFELSE((K-idx.z) * grid(i,J,k) + (idx.z-k) * grid(i,J,K), grid(i,J,k), k==K);
@@ -586,22 +496,6 @@ template<typename T> T FluidSolver::interpolateAttribute(const glm::vec3 &pos, G
     j2 = MATHIFELSE((J-idx.y) * k3 + (idx.y-j) * k4, k3, j==J);
 
     val = MATHIFELSE((I-idx.x) * j1 + (idx.x-i) * j2, j1, i==I);
-
-    /*std::cout << i << ", " << j << ", " << k << ", " << I << ", " << J << ", " << K << std::endl;
-
-    std::cout <<
-            grid(i,j,k) << ", " <<
-            grid(i,j,K) << ", " <<
-            grid(i,J,k) << ", " <<
-            grid(i,J,K) << ", " <<
-            grid(I,j,k) << ", " <<
-            grid(I,j,K) << ", " <<
-            grid(I,J,k) << ", " <<
-            grid(I,J,K) << ", " <<
-            std::endl;
-
-    std::cout << val << std::endl;
-    assert(abs(val) < 100);*/
 
     return val;
 }
