@@ -26,6 +26,7 @@ public:
     void transferVelocitiesToParticles();
     void enforceBoundary();
     void gravitySolve(float step);
+    void extrapolateVelocity();
     void updateParticlePositions(float step);
     void resolveCollisions();
     void updateCells();

@@ -173,7 +173,7 @@ void FluidSolver::enforceBoundary() {
                 _MAC._gV(i,j,k) = std::min(_MAC._gV(i,j,k), 0.f);
                 _MAC._gV(i,ej-1,k) = std::max(_MAC._gV(i,ej-1,k), 0.f);
                 _MAC._gW(i,j,k) = std::min(_MAC._gW(i,j,k), 0.f);
-                _MAC._gW(i,j,k-1) = std::max(_MAC._gW(i,j,k-1), 0.f);
+                _MAC._gW(i,j,ek-1) = std::max(_MAC._gW(i,j,ek-1), 0.f);
                 break;
             default:break;
         }
@@ -186,6 +186,38 @@ void FluidSolver::gravitySolve(float step) {
     });
 }
 
+void FluidSolver::extrapolateVelocity() {
+    _MAC._gType.iterate([&](size_t i, size_t j, size_t k) {
+        if (_MAC._gType(i,j,k) != FLUID) {
+            if (i > 0 && _MAC._gType(i-1,j,k) == FLUID) {
+
+            }
+            if (i+1 < _MAC._gType.countX() && _MAC._gType(i+1,j,k) == FLUID) {
+
+            }
+            if (j > 0 && _MAC._gType(i,j-1,k) == FLUID) {
+
+            }
+            if (j+1 < _MAC._gType.countY() && _MAC._gType(i,j+1,k) == FLUID) {
+
+            }
+            if (k > 0 && _MAC._gType(i,j,k-1) == FLUID) {
+
+            }
+            if (k+1 < _MAC._gType.countZ() && _MAC._gType(i,j,k+1) == FLUID) {
+
+            }
+
+            //size_t si, ei, sj, ej, sk, ek;
+            int count = 0;
+            //_MAC._gType.getNeighboorhood(i,j,k,1,si,ei,sj,ej,sk,ek) {
+
+
+            //_MAC._gU(i,j,k) = 2.f;
+        }
+    });
+}
+
 void FluidSolver::updateParticlePositions(float step) {
 
 #ifdef USETBB
@@ -193,7 +225,13 @@ void FluidSolver::updateParticlePositions(float step) {
         for (size_t i = r.begin(); i != r.end(); ++i) {
             FluidParticle &particle = _particles[i];
             particle.pos_old = particle.pos;
-            particle.pos += particle.vel * step;
+
+            glm::vec3 k1 = step*particle.vel; // step * velAt(pos)
+            particle.pos += step * glm::vec3(
+                    interpolateAttribute(particle.pos + 0.5f*k1, _MAC._gU),
+                    interpolateAttribute(particle.pos + 0.5f*k1, _MAC._gV),
+                    interpolateAttribute(particle.pos + 0.5f*k1, _MAC._gW)
+            );
         }
     });
 #else
@@ -214,7 +252,7 @@ void FluidSolver::resolveCollisions() {
             if (_container->collides(particle.pos_old, particle.pos, normal)) {
                 particle.col = glm::vec3(1,0,0);
                 glm::vec3 mask = glm::vec3(1,1,1) - glm::abs(normal);
-                particle.vel *= mask;
+                //particle.vel *= mask;
                 particle.pos = particle.pos_old;
             }
         }
@@ -225,7 +263,7 @@ void FluidSolver::resolveCollisions() {
         if (_container->collides(particle.pos_old, particle.pos, normal)) {
             particle.col = glm::vec3(1,0,0);
             glm::vec3 mask = glm::vec3(1,1,1) - glm::abs(normal);
-            particle.vel *= mask;
+            //particle.vel *= mask;
             particle.pos = particle.pos_old;
         }
     }
@@ -503,8 +541,9 @@ template<typename T> T FluidSolver::interpolateAttribute(const glm::vec3 &pos, G
 void FluidSolver::update(float step) {
     projectVelocitiesToGrid();
     // pressure solve
-    gravitySolve(step);
     enforceBoundary();
+    gravitySolve(step);
+    extrapolateVelocity();
     transferVelocitiesToParticles();
     updateParticlePositions(step);
     resolveCollisions();
