@@ -189,31 +189,43 @@ void FluidSolver::gravitySolve(float step) {
 void FluidSolver::extrapolateVelocity() {
     _MAC._gType.iterate([&](size_t i, size_t j, size_t k) {
         if (_MAC._gType(i,j,k) != FLUID) {
-            if (i > 0 && _MAC._gType(i-1,j,k) == FLUID) {
+            bool leftExists = i > 0;
+            bool rightExists = i+1 < _MAC._gType.countX();
+            bool belowExists = j > 0;
+            bool aboveExists = j+1 < _MAC._gType.countY();
+            bool backExists = k > 0;
+            bool frontExists = k+1 < _MAC._gType.countZ();
 
+            bool leftFluid = leftExists && _MAC._gType(i-1,j,k) == FLUID;
+            bool rightFluid = rightExists < _MAC._gType.countX() && _MAC._gType(i+1,j,k) == FLUID;
+            bool belowFluid = belowExists && _MAC._gType(i,j-1,k) == FLUID;
+            bool aboveFluid = aboveExists < _MAC._gType.countY() && _MAC._gType(i,j+1,k) == FLUID;
+            bool backFluid = backExists && _MAC._gType(i,j,k-1) == FLUID;
+            bool frontFluid = frontExists < _MAC._gType.countZ() && _MAC._gType(i,j,k+1) == FLUID;
+
+            if (leftFluid != rightFluid) {
+                if (leftFluid && rightExists) {
+                    _MAC._gU(i+1,j,k) = _MAC._gU(i,j,k);
+                } else if (rightFluid && leftExists) {
+                    _MAC._gU(i,j,k) = _MAC._gU(i+1,j,k);
+                }
             }
-            if (i+1 < _MAC._gType.countX() && _MAC._gType(i+1,j,k) == FLUID) {
 
-            }
-            if (j > 0 && _MAC._gType(i,j-1,k) == FLUID) {
-
-            }
-            if (j+1 < _MAC._gType.countY() && _MAC._gType(i,j+1,k) == FLUID) {
-
-            }
-            if (k > 0 && _MAC._gType(i,j,k-1) == FLUID) {
-
-            }
-            if (k+1 < _MAC._gType.countZ() && _MAC._gType(i,j,k+1) == FLUID) {
-
+            if (belowFluid != aboveFluid) {
+                if (belowFluid && aboveExists) {
+                    _MAC._gV(i,j+1,k) = _MAC._gV(i,j,k);
+                } else if (aboveFluid && belowExists) {
+                    _MAC._gV(i,j,k) = _MAC._gV(i,j+1,k);
+                }
             }
 
-            //size_t si, ei, sj, ej, sk, ek;
-            int count = 0;
-            //_MAC._gType.getNeighboorhood(i,j,k,1,si,ei,sj,ej,sk,ek) {
-
-
-            //_MAC._gU(i,j,k) = 2.f;
+            if (backFluid != frontFluid) {
+                if (backFluid && frontExists) {
+                    _MAC._gV(i,j,k+1) = _MAC._gV(i,j,k);
+                } else if (frontFluid && backExists) {
+                    _MAC._gV(i,j,k) = _MAC._gV(i,j,k+1);
+                }
+            }
         }
     });
 }
@@ -226,7 +238,7 @@ void FluidSolver::updateParticlePositions(float step) {
             FluidParticle &particle = _particles[i];
             particle.pos_old = particle.pos;
 
-            glm::vec3 k1 = step*particle.vel; // step * velAt(pos)
+            glm::vec3 k1 = step*particle.vel;
             particle.pos += step * glm::vec3(
                     interpolateAttribute(particle.pos + 0.5f*k1, _MAC._gU),
                     interpolateAttribute(particle.pos + 0.5f*k1, _MAC._gV),
@@ -540,9 +552,10 @@ template<typename T> T FluidSolver::interpolateAttribute(const glm::vec3 &pos, G
 
 void FluidSolver::update(float step) {
     projectVelocitiesToGrid();
+    gravitySolve(step);
+    enforceBoundary();
     // pressure solve
     enforceBoundary();
-    gravitySolve(step);
     extrapolateVelocity();
     transferVelocitiesToParticles();
     updateParticlePositions(step);

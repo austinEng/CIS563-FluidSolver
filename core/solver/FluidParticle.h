@@ -17,7 +17,7 @@ struct FluidParticle {
     FluidParticle() {
         pos = glm::vec3(0);
         pos_old = glm::vec3(0);
-        vel = glm::vec3(0);
+        vel = glm::vec3(0,0,0);
         col = glm::vec3(0.5f, 0.5f, 1.f);
     }
 };

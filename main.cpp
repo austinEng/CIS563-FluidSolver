@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
             std::string filename = "particles_";
             filename.append(std::to_string(++frame));
             filename.append(".vdb");
-            //particlesWriter.writeData(solver, filename);
+            particlesWriter.writeData(solver, filename);
         }
     });
 
