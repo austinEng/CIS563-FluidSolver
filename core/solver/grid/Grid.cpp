@@ -26,10 +26,11 @@ template <typename T> Grid<T>::Grid(const glm::vec3 &origin, const glm::vec3 &of
         //_countX((size_t) (std::ceil((_dim.x - _offset.x) / _cellSize))),
         //_countY((size_t) (std::ceil((_dim.y - _offset.y) / _cellSize))),
         //_countZ((size_t) (std::ceil((_dim.z - _offset.z) / _cellSize))) {
-        _countX((size_t) (std::ceil((_dim.x) / _cellSize))),
-        _countY((size_t) (std::ceil((_dim.y) / _cellSize))),
-        _countZ((size_t) (std::ceil((_dim.z) / _cellSize))) {
+        _countX((size_t) (std::floor((_dim.x - _offset.x) / _cellSize)+1)),
+        _countY((size_t) (std::floor((_dim.y - _offset.y) / _cellSize)+1)),
+        _countZ((size_t) (std::floor((_dim.z - _offset.z) / _cellSize)+1)) {
     _contents = std::vector<T>((unsigned long) (_countX * _countY * _countZ));
+    std::cout << "Constructing " << _countX << "x" << _countY << "x" << _countZ << " grid..." << std::endl;
 }
 /*
 template <typename T> template <typename C> Grid<T>::Grid(const Grid<C> &rhs) :
@@ -117,12 +118,12 @@ template <typename T> glm::ivec3 Grid<T>::indexOf(const glm::vec3 &pos) const {
 
 template <typename T> void Grid<T>::indexOf(const glm::vec3 &pos, size_t &i, size_t &j, size_t &k) const {
     glm::vec3 indices = (pos - _offset - _origin) / _cellSize;
-    i = (size_t) ((indices.x <= _countX) * indices.x + (indices.x > _countX) * _countX); // clamp at countX
-    j = (size_t) ((indices.y <= _countY) * indices.y + (indices.y > _countY) * _countY); // clamp at countY
-    k = (size_t) ((indices.z <= _countZ) * indices.z + (indices.z > _countZ) * _countZ); // clamp at countZ
-    i = (i > 0) * i;
-    j = (j > 0) * j;
-    k = (k > 0) * k;
+    i = (size_t) ((indices.x < _countX) * indices.x + (indices.x > _countX-1) * (_countX-1)); // clamp at countX
+    j = (size_t) ((indices.y < _countY) * indices.y + (indices.y > _countY-1) * (_countY-1)); // clamp at countY
+    k = (size_t) ((indices.z < _countZ) * indices.z + (indices.z > _countZ-1) * (_countZ-1)); // clamp at countZ
+//    i = (i > 0) * i;
+//    j = (j > 0) * j;
+//    k = (k > 0) * k;
 }
 
 

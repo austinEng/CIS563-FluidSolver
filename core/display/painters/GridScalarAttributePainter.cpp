@@ -5,6 +5,7 @@
 #include "GridScalarAttributePainter.h"
 #include <core/display/shaders/gridScal.frag.h>
 #include <core/display/shaders/gridScal.vert.h>
+#include <iostream>
 
 GridScalarAttributePainter::GridScalarAttributePainter(
         Grid<float> *grid, float rangeStart, float rangeEnd,
@@ -63,6 +64,7 @@ GridScalarAttributePainter::GridScalarAttributePainter(Grid<T> *grid, float rang
     unifSizeEnd = glGetUniformLocation(prog, "u_sizeEnd");
     unifRangeStart = glGetUniformLocation(prog, "u_rangeStart");
     unifRangeEnd = glGetUniformLocation(prog, "u_rangeEnd");
+    unifType = glGetUniformLocation(prog, "u_type");
 
     unifCellSize = glGetUniformLocation(prog, "u_cellSize");
     unifCellCount = glGetUniformLocation(prog, "u_cellCount");
@@ -78,10 +80,14 @@ GridScalarAttributePainter::GridScalarAttributePainter(Grid<T> *grid, float rang
         glGenBuffers(1, &attribute_buffer);
         glBindBuffer(GL_ARRAY_BUFFER, attribute_buffer);
         glBufferData(GL_ARRAY_BUFFER, MAX_ATTRIBUTES * sizeof(float), NULL, GL_STREAM_DRAW);
+
+        glUniform1i(unifType, 0);
     } else if (type == INT) {
         glGenBuffers(1, &attribute_buffer);
         glBindBuffer(GL_ARRAY_BUFFER, attribute_buffer);
         glBufferData(GL_ARRAY_BUFFER, MAX_ATTRIBUTES * sizeof(int), NULL, GL_STREAM_DRAW);
+
+        glUniform1i(unifType, 1);
     }
 
     // set grid uniforms
@@ -103,6 +109,10 @@ GridScalarAttributePainter::GridScalarAttributePainter(Grid<T> *grid, float rang
 void GridScalarAttributePainter::draw() const {
     if (type == FLOAT) {
         if (_attributesF != nullptr) {
+//            for (float f : *_attributesF) {
+//                std:: cout << f << std::endl;
+//            }
+
             glUseProgram(prog);
             glEnable(GL_PROGRAM_POINT_SIZE);
 

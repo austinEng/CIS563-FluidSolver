@@ -232,7 +232,7 @@ void Window::initloop(std::function<void(void)> predraw) {
             painter->draw();
         }
 
-        TwDraw();
+//        TwDraw();
 
         glfwSwapBuffers(_window);
         glfwPollEvents();

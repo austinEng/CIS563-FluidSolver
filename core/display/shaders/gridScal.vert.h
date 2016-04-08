@@ -19,6 +19,8 @@ uniform float u_sizeEnd;
 uniform float u_rangeStart;
 uniform float u_rangeEnd;
 
+uniform int u_type;
+
 in float f_data;
 in int i_data;
 out float amount;
@@ -33,6 +35,11 @@ void main() {
 
     gl_Position = u_viewProj * vec4(pos, 1);
 
+    if (u_type > 0) {
+        amount = (float(i_data) - u_rangeStart) / (u_rangeEnd - u_rangeStart);
+    } else {
+        amount = (f_data - u_rangeStart) / (u_rangeEnd - u_rangeStart);
+    }
     amount = (float(i_data) - u_rangeStart) / (u_rangeEnd - u_rangeStart);
 
     gl_PointSize = u_sizeStart  + amount * (u_sizeEnd - u_sizeStart);

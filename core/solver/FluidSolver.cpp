@@ -11,6 +11,11 @@
 #include <tbb/parallel_reduce.h>
 #include <tbb/blocked_range3d.h>
 #include <tbb/partitioner.h>
+#include <Eigen/Sparse>
+#include <Eigen/SparseCore>
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/SparseCholesky>
+
 
 float FluidSolver::g = -9.80665f;
 
@@ -25,12 +30,13 @@ void FluidSolver::setContainer(GeoObject *container) {
     _container = container;
     glm::vec3 size = _container->bound().dim();
     glm::vec3 origin = (_container->bound().center() - size) / 2.f;
-    _MAC = MACGrid<std::vector<FluidParticle*> >(
-            origin - glm::vec3(_cell_size, _cell_size, _cell_size),
-            size + 2.f*glm::vec3(_cell_size, _cell_size, _cell_size),
-            _cell_size
-    );
-
+//    _MAC = MACGrid<std::vector<FluidParticle*> >(
+//            origin - glm::vec3(_cell_size, _cell_size, _cell_size),
+//            size + 2.f*glm::vec3(_cell_size, _cell_size, _cell_size),
+//            _cell_size
+//    );
+    _MAC = MACGrid<std::vector<FluidParticle*> >(origin, size, _cell_size);
+/*
     std::function<void(size_t, size_t, size_t)> setSolid = [&](size_t i, size_t j, size_t k) {
         _MAC._gType(i,j,k) = SOLID;
     };
@@ -41,7 +47,7 @@ void FluidSolver::setContainer(GeoObject *container) {
     _MAC._gType.iterateRegion(0,_MAC._gType.countY()-1,0, _MAC._gType.countX(),_MAC._gType.countY(),_MAC._gType.countZ(), setSolid);
     _MAC._gType.iterateRegion(0,0,0, _MAC._gType.countX(),_MAC._gType.countY(),1, setSolid);
     _MAC._gType.iterateRegion(0,0,_MAC._gType.countZ()-1, _MAC._gType.countX(),_MAC._gType.countY(),_MAC._gType.countZ(), setSolid);
-
+*/
     /*_MAC = MACGrid<std::vector<FluidParticle*> >(
             origin,
             size,
@@ -53,6 +59,12 @@ void FluidSolver::setContainer(GeoObject *container) {
  * Loop over fluid bounds to generate particles
  */
 void FluidSolver::addFluid(GeoObject *fluid) {
+//    FluidParticle p;
+//    p.pos = glm::vec3(-5,5,5);
+//    _particles.push_back(p);
+//    _MAC._gType.at(p.pos) = FLUID;
+//    return;
+
     Bound& b = fluid->bound();
     for (float x = b.minX(); x < b.maxX(); x += particle_radius) {
         for (float y = b.minY(); y < b.maxY(); y += particle_radius) {
@@ -75,17 +87,20 @@ void FluidSolver::init() {
         particle.cell = _MAC.indexOf(particle.pos);
         _MAC(particle.cell).push_back(&particle);
     }
-
-    std::size_t velOffset = offsetof(FluidParticle, vel);
-    std::size_t U_offset = velOffset + offsetof(glm::vec3, x);
-    std::size_t V_offset = velOffset + offsetof(glm::vec3, y);
-    std::size_t W_offset = velOffset + offsetof(glm::vec3, z);
-    particleAttributeToGrid(U_offset, _MAC._gU_old, _cell_size, 0.f);
-    particleAttributeToGrid(V_offset, _MAC._gV_old, _cell_size, 0.f);
-    particleAttributeToGrid(W_offset, _MAC._gW_old, _cell_size, 0.f);
-    particleAttributeToGrid(U_offset, _MAC._gU, _cell_size, 0.f);
-    particleAttributeToGrid(V_offset, _MAC._gV, _cell_size, 0.f);
-    particleAttributeToGrid(W_offset, _MAC._gW, _cell_size, 0.f);
+    _MAC._gU.clear(0);
+    _MAC._gV.clear(0);
+    _MAC._gW.clear(0);
+//
+//    std::size_t velOffset = offsetof(FluidParticle, vel);
+//    std::size_t U_offset = velOffset + offsetof(glm::vec3, x);
+//    std::size_t V_offset = velOffset + offsetof(glm::vec3, y);
+//    std::size_t W_offset = velOffset + offsetof(glm::vec3, z);
+//    particleAttributeToGrid(U_offset, _MAC._gU_old, _cell_size, 0.f);
+//    particleAttributeToGrid(V_offset, _MAC._gV_old, _cell_size, 0.f);
+//    particleAttributeToGrid(W_offset, _MAC._gW_old, _cell_size, 0.f);
+//    particleAttributeToGrid(U_offset, _MAC._gU, _cell_size, 0.f);
+//    particleAttributeToGrid(V_offset, _MAC._gV, _cell_size, 0.f);
+//    particleAttributeToGrid(W_offset, _MAC._gW, _cell_size, 0.f);
 }
 
 void FluidSolver::projectVelocitiesToGrid() {
@@ -161,23 +176,154 @@ void FluidSolver::transferVelocitiesToParticles() {
 }
 
 void FluidSolver::enforceBoundary() {
-    _MAC._gType.iterate([&](size_t i, size_t j, size_t k) {
-        switch (_MAC._gType(i,j,k)) {
-            case EMPTY:break;
-            case FLUID:break;
-            case SOLID:
-                size_t si, ei, sj, ej, sk, ek;
-                _MAC._gType.getNeighboorhood(i,j,k,1,si,ei,sj,ej,sk,ek);
-                _MAC._gU(i,j,k) = std::min(_MAC._gU(i,j,k), 0.f);
-                _MAC._gU(ei-1,j,k) = std::max(_MAC._gU(ei-1,j,k), 0.f);
-                _MAC._gV(i,j,k) = std::min(_MAC._gV(i,j,k), 0.f);
-                _MAC._gV(i,ej-1,k) = std::max(_MAC._gV(i,ej-1,k), 0.f);
-                _MAC._gW(i,j,k) = std::min(_MAC._gW(i,j,k), 0.f);
-                _MAC._gW(i,j,ek-1) = std::max(_MAC._gW(i,j,ek-1), 0.f);
-                break;
-            default:break;
+//    _MAC._gType.iterate([&](size_t i, size_t j, size_t k) {
+//        switch (_MAC._gType(i,j,k)) {
+//            case EMPTY:break;
+//            case FLUID:break;
+//            case SOLID:
+//                size_t si, ei, sj, ej, sk, ek;
+//                _MAC._gType.getNeighboorhood(i,j,k,1,si,ei,sj,ej,sk,ek);
+//                _MAC._gU(i,j,k) = 0;//std::min(_MAC._gU(i,j,k), 0.f);
+//                _MAC._gU(ei-1,j,k) = 0;//std::max(_MAC._gU(ei-1,j,k), 0.f);
+//                _MAC._gV(i,j,k) = 0;//std::min(_MAC._gV(i,j,k), 0.f);
+//                _MAC._gV(i,ej-1,k) = 0;//std::max(_MAC._gV(i,ej-1,k), 0.f);
+//                _MAC._gW(i,j,k) = 0;//std::min(_MAC._gW(i,j,k), 0.f);
+//                _MAC._gW(i,j,ek-1) = 0;//std::max(_MAC._gW(i,j,ek-1), 0.f);
+//                break;
+//            default:break;
+//        }
+//    });
+
+    _MAC._gU.iterateRegion(0,0,0, 1,_MAC._gU.countY(),_MAC._gU.countZ(), [&](size_t i, size_t j, size_t k) {
+        _MAC._gU(i,j,k) = 0;
+    });
+    _MAC._gU.iterateRegion(_MAC._gU.countX()-1,0,0, _MAC._gU.countX(),_MAC._gU.countY(),_MAC._gU.countZ(), [&](size_t i, size_t j, size_t k) {
+        _MAC._gU(i,j,k) = 0;
+    });
+    _MAC._gV.iterateRegion(0,0,0, _MAC._gV.countX(),1,_MAC._gV.countZ(), [&](size_t i, size_t j, size_t k) {
+        _MAC._gV(i,j,k) = 0;
+    });
+    _MAC._gV.iterateRegion(0,_MAC._gV.countY()-1,0, _MAC._gV.countX(),_MAC._gV.countY(),_MAC._gV.countZ(), [&](size_t i, size_t j, size_t k) {
+        _MAC._gV(i,j,k) = 0;
+    });
+    _MAC._gW.iterateRegion(0,0,0, _MAC._gW.countX(),_MAC._gW.countY(),1, [&](size_t i, size_t j, size_t k) {
+        _MAC._gW(i,j,k) = 0;
+    });
+    _MAC._gW.iterateRegion(0,0,_MAC._gW.countZ()-1, _MAC._gW.countX(),_MAC._gW.countY(),_MAC._gW.countZ(), [&](size_t i, size_t j, size_t k) {
+        _MAC._gW(i,j,k) = 0;
+    });
+}
+
+void FluidSolver::pressureSolve(float step) {
+    typedef Eigen::Triplet<float> T;
+    std::vector<T> coefficientsA;
+    std::vector<T> coefficientsB;
+    Eigen::SparseMatrix<float> A(_MAC._gType.size(), _MAC._gType.size());
+    Eigen::SparseMatrix<float> b(_MAC._gType.size(), 1);
+    Eigen::SparseVector<float> x(_MAC._gType.size());
+    A.setZero();
+    b.setZero();
+    x.setZero();
+    float scale = step / (1.f*_cell_size*_cell_size);
+
+    _MAC._gType.iterate([&](size_t I, size_t J, size_t K) {
+        size_t IDX = _MAC._gType.fromIJK(I,J,K);
+        if (_MAC._gType(I,J,K) == FLUID) {
+            int count = 0;
+
+            auto typeCB = [&](size_t i, size_t j, size_t k) {
+                size_t idx = _MAC._gType.fromIJK(i,j,k);
+                if (_MAC._gType(i,j,k) == FLUID || _MAC._gType(i,j,k) == EMPTY) {
+                    count++;
+                    if (_MAC._gType(i,j,k) == FLUID) {
+                        coefficientsA.push_back(T(IDX, idx, -scale));
+                    }
+                }
+            };
+
+            if (I > 0) {                            // if I-1 >= 0
+                typeCB(I-1,J,K);
+            }
+            if (I + 1 < _MAC._gType.countX()) {     // if I + 1 < countX
+                typeCB(I+1,J,K);
+            }
+            if (J > 0) {                            // if J-1 >= 0
+                typeCB(I,J-1,K);
+            }
+            if (J + 1 < _MAC._gType.countY()) {     // if J + 1 < countY
+                typeCB(I,J+1,K);
+            }
+            if (K > 0) {                            // if K-1 >= 0
+                typeCB(I,J,K-1);
+            }
+            if (K + 1 < _MAC._gType.countZ()) {     // if K + 1 < countZ
+                typeCB(I,J,K+1);
+            }
+
+            coefficientsA.push_back(T(IDX, IDX, count*scale));
+
+            float div =
+            -(_MAC._gU(I+1,J,K) - _MAC._gU(I,J,K)) / _cell_size +
+            -(_MAC._gV(I,J+1,K) - _MAC._gV(I,J,K)) / _cell_size +
+            -(_MAC._gW(I,J,K+1) - _MAC._gW(I,J,K)) / _cell_size;
+
+            coefficientsB.push_back(T(IDX,0,div));
+        }
+    }, false);
+
+    A.setFromTriplets(coefficientsA.begin(), coefficientsA.end());
+//    std::cout << A << std::endl;
+    b.setFromTriplets(coefficientsB.begin(), coefficientsB.end());
+//    Eigen::ConjugateGradient<Eigen::SparseMatrix<float>, Eigen::Upper, Eigen::IncompleteCholesky<float>> cg(A);
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<float>, Eigen::Lower, Eigen::IdentityPreconditioner> cg(A);
+    x = cg.solve(b);
+
+    _MAC._gP.clear(0);
+    for (Eigen::SparseVector<float>::InnerIterator it(x); it; ++it) {
+        _MAC._gP(it.index()) = it.value();
+    }
+
+    _MAC._gU.iterate([&](size_t i, size_t j, size_t k) {
+        bool leftExists = i > 0;
+        bool rightExists = i < _MAC._gP.countX();
+        if (leftExists && rightExists && _MAC._gType(i-1,j,k) == FLUID || _MAC._gType(i,j,k) == FLUID) {
+            float delP = _MAC._gP(i,j,k) - _MAC._gP(i-1,j,k);
+            _MAC._gU(i,j,k) -= step/(1.f*_cell_size) * delP;
         }
     });
+
+    _MAC._gV.iterate([&](size_t i, size_t j, size_t k) {
+        bool leftExists = j > 0;
+        bool rightExists = j < _MAC._gP.countY();
+        if (leftExists && rightExists && _MAC._gType(i,j-1,k) == FLUID || _MAC._gType(i,j,k) == FLUID) {
+            float delP = _MAC._gP(i,j,k) - _MAC._gP(i,j-1,k);
+            _MAC._gV(i,j,k) -= step/(1.f*_cell_size) * delP;
+        }
+    });
+
+    _MAC._gW.iterate([&](size_t i, size_t j, size_t k) {
+        bool leftExists = k > 0;
+        bool rightExists = k < _MAC._gP.countZ();
+        if (leftExists && rightExists && _MAC._gType(i,j,k-1) == FLUID || _MAC._gType(i,j,k) == FLUID) {
+            float delP = _MAC._gP(i,j,k) - _MAC._gP(i,j,k-1);
+            _MAC._gW(i,j,k) -= step/(1.f*_cell_size) * delP;
+        }
+    });
+
+//    coefficientsB.clear();
+    _MAC._gType.iterate([&](size_t I, size_t J, size_t K) {
+        size_t IDX = _MAC._gType.fromIJK(I, J, K);
+        if (_MAC._gType(I, J, K) == FLUID) {
+            float div =
+            -(_MAC._gU(I+1,J,K) - _MAC._gU(I,J,K)) / _cell_size +
+            -(_MAC._gV(I,J+1,K) - _MAC._gV(I,J,K)) / _cell_size +
+            -(_MAC._gW(I,J,K+1) - _MAC._gW(I,J,K)) / _cell_size;
+
+//            coefficientsB.push_back(T(IDX,0,div));
+//            std::cout << div << std::endl;
+        }
+    });
+
 }
 
 void FluidSolver::gravitySolve(float step) {
@@ -203,29 +349,66 @@ void FluidSolver::extrapolateVelocity() {
             bool backFluid = backExists && _MAC._gType(i,j,k-1) == FLUID;
             bool frontFluid = frontExists < _MAC._gType.countZ() && _MAC._gType(i,j,k+1) == FLUID;
 
-            if (leftFluid != rightFluid) {
-                if (leftFluid && rightExists) {
-                    _MAC._gU(i+1,j,k) = _MAC._gU(i,j,k);
-                } else if (rightFluid && leftExists) {
-                    _MAC._gU(i,j,k) = _MAC._gU(i+1,j,k);
-                }
+            int uCount = 0;
+            int vCount = 0;
+            int wCount = 0;
+
+            float uVel;
+            float vVel;
+            float wVel;
+
+            if (leftFluid) {
+                vVel += _MAC._gV(i-1,j,k); vCount++;
+                wVel += _MAC._gW(i-1,j,k); wCount++;
+            }
+            if (rightFluid) {
+                vVel += _MAC._gV(i+1,j,k); vCount++;
+                wVel += _MAC._gW(i+1,j,k); wCount++;
+            }
+            if (belowFluid) {
+                uVel += _MAC._gU(i,j-1,k); uCount++;
+                wVel += _MAC._gW(i,j-1,k); wCount++;
+            }
+            if (aboveFluid) {
+                uVel += _MAC._gU(i,j+1,k); uCount++;
+                wVel += _MAC._gW(i,j+1,k); wCount++;
+            }
+            if (backFluid) {
+                vVel += _MAC._gV(i,j,k-1); vCount++;
+                uVel += _MAC._gU(i,j,k-1); uCount++;
+            }
+            if (frontFluid) {
+                vVel += _MAC._gV(i,j,k+1); vCount++;
+                uVel += _MAC._gU(i,j,k+1); uCount++;
             }
 
-            if (belowFluid != aboveFluid) {
-                if (belowFluid && aboveExists) {
-                    _MAC._gV(i,j+1,k) = _MAC._gV(i,j,k);
-                } else if (aboveFluid && belowExists) {
-                    _MAC._gV(i,j,k) = _MAC._gV(i,j+1,k);
-                }
-            }
+//            if (uCount > 0) _MAC._gU(i,j,k) = uVel / uCount;
+//            if (vCount > 0) _MAC._gV(i,j,k) = vVel / vCount;
+//            if (wCount > 0) _MAC._gW(i,j,k) = wVel / wCount;
 
-            if (backFluid != frontFluid) {
-                if (backFluid && frontExists) {
-                    _MAC._gV(i,j,k+1) = _MAC._gV(i,j,k);
-                } else if (frontFluid && backExists) {
-                    _MAC._gV(i,j,k) = _MAC._gV(i,j,k+1);
-                }
-            }
+//            if (leftFluid != rightFluid) {
+//                if (leftFluid && rightExists) {
+//                    _MAC._gU(i+1,j,k) = _MAC._gU(i,j,k);
+//                } else if (rightFluid && leftExists) {
+//                    _MAC._gU(i,j,k) = _MAC._gU(i+1,j,k);
+//                }
+//            }
+//
+//            if (belowFluid != aboveFluid) {
+//                if (belowFluid && aboveExists) {
+//                    _MAC._gV(i,j+1,k) = _MAC._gV(i,j,k);
+//                } else if (aboveFluid && belowExists) {
+//                    _MAC._gV(i,j,k) = _MAC._gV(i,j+1,k);
+//                }
+//            }
+//
+//            if (backFluid != frontFluid) {
+//                if (backFluid && frontExists) {
+//                    _MAC._gV(i,j,k+1) = _MAC._gV(i,j,k);
+//                } else if (frontFluid && backExists) {
+//                    _MAC._gV(i,j,k) = _MAC._gV(i,j,k+1);
+//                }
+//            }
         }
     });
 }
@@ -296,7 +479,7 @@ void FluidSolver::updateCells() {
 
     }
 
-    std::function<void(size_t, size_t, size_t)> setSolid = [&](size_t i, size_t j, size_t k) {
+    /*std::function<void(size_t, size_t, size_t)> setSolid = [&](size_t i, size_t j, size_t k) {
         _MAC._gType(i,j,k) = SOLID;
     };
 
@@ -305,7 +488,7 @@ void FluidSolver::updateCells() {
     _MAC._gType.iterateRegion(0,0,0, _MAC._gType.countX(),1,_MAC._gType.countZ(), setSolid);
     _MAC._gType.iterateRegion(0,_MAC._gType.countY()-1,0, _MAC._gType.countX(),_MAC._gType.countY(),_MAC._gType.countZ(), setSolid);
     _MAC._gType.iterateRegion(0,0,0, _MAC._gType.countX(),_MAC._gType.countY(),1, setSolid);
-    _MAC._gType.iterateRegion(0,0,_MAC._gType.countZ()-1, _MAC._gType.countX(),_MAC._gType.countY(),_MAC._gType.countZ(), setSolid);
+    _MAC._gType.iterateRegion(0,0,_MAC._gType.countZ()-1, _MAC._gType.countX(),_MAC._gType.countY(),_MAC._gType.countZ(), setSolid);*/
 
 }
 
@@ -327,93 +510,6 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
     std::size_t attributeSize = sizeof(T);
     std::size_t cellRadius = (size_t) glm::ceil(radius / _cell_size);
 
-#ifdef SPLATTING // if splatting
-    grid.clear(zeroVal);
-    std::vector<float> distances(grid.countX() * grid.countY() * grid.countZ());
-
-    iterParticles([&](FluidParticle &particle) {
-        size_t I,J,K;
-        grid.indexOf(particle.pos, I, J, K);
-        glm::vec3 gridPos = grid.positionOf(I,J,K);
-
-        grid.iterateNeighborhood(I,J,K,cellRadius, [&](size_t i, size_t j, size_t k) {
-            float dist = glm::distance(particle.pos, gridPos);
-            size_t idx = grid.fromIJK(i,j,k);
-            distances[idx] += dist * (dist < radius);
-        });
-    }, false);
-
-    iterParticles([&](FluidParticle &particle) {
-        size_t I,J,K;
-        grid.indexOf(particle.pos, I, J, K);
-        glm::vec3 gridPos = grid.positionOf(I,J,K);
-
-        grid.iterateNeighborhood(I,J,K,cellRadius, [&](size_t i, size_t j, size_t k) {
-            float dist = glm::distance(particle.pos, gridPos);
-            size_t idx = grid.fromIJK(i,j,k);
-            T temp;
-            void *address = (void *) &particle + offset;
-            std::memcpy(&temp, address, attributeSize);
-            grid(i,j,k) += temp * (dist / distances[idx]) * (dist < radius);
-        });
-    }, false);
-
-#else // else splatting
-
-/*#ifdef USETBB
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, grid.size()), [&](const tbb::blocked_range<size_t> &r) {
-        for (size_t idx = r.begin(); idx != r.end(); idx++) {
-#else
-    for (size_t idx = 0; idx < grid.size(); idx++) {
-#endif
-        size_t I, J, K;
-        grid.toIJK(idx, I, J, K);
-        glm::vec3 gridPos = grid.positionOf(I,J,K);
-
-        size_t si, ei, sj, ej, sk, ek;
-        _MAC.getNeighboorhood(I, J, K, cellRadius, si, ei, sj, ej, sk, ek);
-
-        float totalWeight = 0.f;
-        for (size_t i = si; i < ei; i++) {
-            for (size_t j = sj; j < ej; j++) {
-                for (size_t k = sk; k < ek; k++) {
-                    for (FluidParticle *particle : _MAC(i,j,k)) {
-                        float dist = glm::distance(particle->pos, gridPos);
-                        float weight = kernel(dist, radius/2.f);
-                        totalWeight += weight;
-                    }
-                }
-            }
-        }
-
-        if (totalWeight == 0) {
-            grid(I,J,K) = zeroVal;
-            continue;
-        }
-
-        T temp;
-        T gridVal = zeroVal;
-        for (size_t i = si; i < ei; i++) {
-            for (size_t j = sj; j < ej; j++) {
-                for (size_t k = sk; k < ek; k++) {
-                    for (FluidParticle *particle : _MAC(i,j,k)) {
-                        float dist = glm::distance(particle->pos, gridPos);
-                        float weight = kernel(dist, radius/2.f);
-                        void *address = (void *) particle + offset;
-                        std::memcpy(&temp, address, attributeSize);
-                        gridVal += temp * (weight / totalWeight);
-                    }
-                }
-            }
-        }
-
-        grid(I,J,K) = gridVal;
-#ifdef USETBB
-    });
-#else
-    }
-#endif*/
-
     grid.iterate([&](size_t I, size_t J, size_t K) {
         glm::vec3 gridPos = grid.positionOf(I,J,K);
 
@@ -422,69 +518,7 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
         _MAC.getNeighboorhood(mI, mJ, mK, cellRadius, si, ei, sj, ej, sk, ek);
 
         float totalWeight = 0.f;
-//#define TOOMUCH
-#ifdef TOOMUCH
-        totalWeight += tbb::parallel_reduce(
-            tbb::blocked_range3d<size_t>(si,ei,sj,ej,sk,ek), 0.f,
-            [&](const tbb::blocked_range3d<size_t> &r, float init)->float {
-                for(size_t i=r.pages().begin(), i_end=r.pages().end(); i<i_end; i++){
-                    for (size_t j=r.rows().begin(), j_end=r.rows().end(); j<j_end; j++){
-                        for (size_t k=r.cols().begin(), k_end=r.cols().end(); k<k_end; k++){
-                            typedef std::vector<FluidParticle*>::iterator range_iterator;
-                            init += tbb::parallel_reduce(
-                                    tbb::blocked_range<range_iterator>(_MAC(i,j,k).begin(), _MAC(i,j,k).end()), 0.f,
-                                    [&](const tbb::blocked_range<range_iterator> &r2, float init2)->float {
-                                        for (range_iterator p = r2.begin(); p != r2.end(); p++) {
-                                            FluidParticle* particle = *p;
-                                            float dist = glm::distance(particle->pos, gridPos);
-                                            float weight = kernel(dist, radius/2.f);
-                                            init2 += weight;
-                                        }
-                                        return init2;
-                                    }, std::plus<float>()
-                            );
-                        }
-                    }
-                }
-                return init;
-            },
-            std::plus<float>()
-        );
 
-        T gridVal = zeroVal;
-        gridVal += tbb::parallel_reduce(
-                tbb::blocked_range3d<size_t>(si,ei,sj,ej,sk,ek), 0.f,
-                [&](const tbb::blocked_range3d<size_t> &r, float init)->T {
-                    for(size_t i=r.pages().begin(), i_end=r.pages().end(); i<i_end; i++){
-                        for (size_t j=r.rows().begin(), j_end=r.rows().end(); j<j_end; j++){
-                            for (size_t k=r.cols().begin(), k_end=r.cols().end(); k<k_end; k++){
-                                typedef std::vector<FluidParticle*>::iterator range_iterator;
-                                init += tbb::parallel_reduce(
-                                        tbb::blocked_range<range_iterator>(_MAC(i,j,k).begin(), _MAC(i,j,k).end()), 0.f,
-                                        [&](const tbb::blocked_range<range_iterator> &r2, float init2)->T {
-                                            for (range_iterator p = r2.begin(); p != r2.end(); p++) {
-                                                FluidParticle* particle = *p;
-                                                float dist = glm::distance(particle->pos, gridPos);
-                                                float weight = kernel(dist, radius/2.f);
-                                                T temp;
-                                                void *address = (void *) particle + offset;
-                                                std::memcpy(&temp, address, attributeSize);
-                                                init2 += temp * (weight / totalWeight);
-                                            }
-                                            return init2;
-                                        }, std::plus<T>()
-                                );
-                            }
-                        }
-                    }
-                    return init;
-                },
-                std::plus<float>()
-        );
-
-        grid(I,J,K) = gridVal;
-
-#else
         for (size_t i = si; i < ei; i++) {
             for (size_t j = sj; j < ej; j++) {
                 for (size_t k = sk; k < ek; k++) {
@@ -519,10 +553,8 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
         }
 
         grid(I,J,K) = gridVal;
-#endif
-    });
+    }, false);
 
-#endif // endif splatting
 }
 
 template<typename T> T FluidSolver::interpolateAttribute(const glm::vec3 &pos, Grid<T> &grid) {
@@ -554,7 +586,7 @@ void FluidSolver::update(float step) {
     projectVelocitiesToGrid();
     gravitySolve(step);
     enforceBoundary();
-    // pressure solve
+    pressureSolve(step);
     enforceBoundary();
     extrapolateVelocity();
     transferVelocitiesToParticles();

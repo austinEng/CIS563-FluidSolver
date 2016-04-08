@@ -11,30 +11,34 @@ int main(int argc, char* argv[]) {
     Window* window = new Window("Fluid Solver");
 
     FluidSolver* solver = SceneLoader::LoadScene(argv[1]);
-    solver->init();
 
     ParticlesWriter particlesWriter;
+    solver->init();
+
     particlesWriter.writeData(solver, "particles_0.vdb");
 
     ParticlesPainter particlesPainter(solver);
     BoxPainter boxPainter((Box *) solver->_container);
-    GridVectorAttributePainter uPainter (&solver->_MAC._gU, 3.f, glm::vec3(1,0,0), glm::vec3(0.1,0,0));
-    GridVectorAttributePainter vPainter (&solver->_MAC._gV, 3.f, glm::vec3(0,1,0), glm::vec3(0,0.1,0));
-    GridVectorAttributePainter wPainter (&solver->_MAC._gW, 3.f, glm::vec3(0,0,1), glm::vec3(0,0,0.1));
+    GridVectorAttributePainter uPainter (&solver->_MAC._gU, 3.f, glm::vec3(1,0,0), glm::vec3(0.2,0,0));
+    GridVectorAttributePainter vPainter (&solver->_MAC._gV, 3.f, glm::vec3(0,1,0), glm::vec3(0,0.2,0));
+    GridVectorAttributePainter wPainter (&solver->_MAC._gW, 3.f, glm::vec3(0,0,1), glm::vec3(0,0,0.2));
     GridScalarAttributePainter tPainter (
-            &solver->_MAC._gType, 0.f, 2.f, 2.f, 4.f, glm::vec3(1,1,1), glm::vec3(0,0,0.1));
+            &solver->_MAC._gType, 0.f, 1.f, 2.f, 7.f, glm::vec3(0,0,0), glm::vec3(0,0,1));
+    GridScalarAttributePainter pPainter (
+            &solver->_MAC._gP, 0.f, 20.f, 0.f, 10.f, glm::vec3(1,1,0), glm::vec3(1,0,0));
 
     window->addPainter(&particlesPainter);
     window->addPainter(&boxPainter);
     window->addPainter(&uPainter);
     window->addPainter(&vPainter);
     window->addPainter(&wPainter);
-    //window->addPainter(&tPainter);
+    window->addPainter(&tPainter);
+    window->addPainter(&pPainter);
 
     window->loadSceneCB = [](void*) {
         std::cout << "what" << std::endl;
     };
-    window->initializeTweakBar();
+//    window->initializeTweakBar();
 
     int framerate = 24;
     double start = glfwGetTime();

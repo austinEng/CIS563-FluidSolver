@@ -34,8 +34,9 @@ struct quaternionbase_assign_impl;
 template<class Derived>
 class QuaternionBase : public RotationBase<Derived, 3>
 {
+ public:
   typedef RotationBase<Derived, 3> Base;
-public:
+
   using Base::operator*;
   using Base::derived;
 
@@ -102,11 +103,11 @@ public:
   /** \returns a quaternion representing an identity rotation
     * \sa MatrixBase::Identity()
     */
-  static inline Quaternion<Scalar> Identity() { return Quaternion<Scalar>(1, 0, 0, 0); }
+  static inline Quaternion<Scalar> Identity() { return Quaternion<Scalar>(Scalar(1), Scalar(0), Scalar(0), Scalar(0)); }
 
   /** \sa QuaternionBase::Identity(), MatrixBase::setIdentity()
     */
-  inline QuaternionBase& setIdentity() { coeffs() << 0, 0, 0, 1; return *this; }
+  inline QuaternionBase& setIdentity() { coeffs() << Scalar(0), Scalar(0), Scalar(0), Scalar(1); return *this; }
 
   /** \returns the squared norm of the quaternion's coefficients
     * \sa QuaternionBase::norm(), MatrixBase::squaredNorm()
@@ -150,10 +151,6 @@ public:
   /** \returns the conjugated quaternion */
   Quaternion<Scalar> conjugate() const;
 
-  /** \returns an interpolation for a constant motion between \a other and \c *this
-    * \a t in [0;1]
-    * see http://en.wikipedia.org/wiki/Slerp
-    */
   template<class OtherDerived> Quaternion<Scalar> slerp(const Scalar& t, const QuaternionBase<OtherDerived>& other) const;
 
   /** \returns \c true if \c *this is approximately equal to \a other, within the precision
@@ -164,8 +161,8 @@ public:
   bool isApprox(const QuaternionBase<OtherDerived>& other, const RealScalar& prec = NumTraits<Scalar>::dummy_precision()) const
   { return coeffs().isApprox(other.coeffs(), prec); }
 
-	/** return the result vector of \a v through the rotation*/
-  EIGEN_STRONG_INLINE Vector3 _transformVector(Vector3 v) const;
+  /** return the result vector of \a v through the rotation*/
+  EIGEN_STRONG_INLINE Vector3 _transformVector(const Vector3& v) const;
 
   /** \returns \c *this with scalar type casted to \a NewScalarType
     *
@@ -194,11 +191,11 @@ public:
   * \brief The quaternion class used to represent 3D orientations and rotations
   *
   * \tparam _Scalar the scalar type, i.e., the type of the coefficients
-  * \tparam _Options controls the memory alignement of the coeffecients. Can be \# AutoAlign or \# DontAlign. Default is AutoAlign.
+  * \tparam _Options controls the memory alignment of the coefficients. Can be \# AutoAlign or \# DontAlign. Default is AutoAlign.
   *
   * This class represents a quaternion \f$ w+xi+yj+zk \f$ that is a convenient representation of
   * orientations and rotations of objects in three dimensions. Compared to other representations
-  * like Euler angles or 3x3 matrices, quatertions offer the following advantages:
+  * like Euler angles or 3x3 matrices, quaternions offer the following advantages:
   * \li \b compact storage (4 scalars)
   * \li \b efficient to compose (28 flops),
   * \li \b stable spherical interpolation
@@ -206,6 +203,8 @@ public:
   * The following two typedefs are provided for convenience:
   * \li \c Quaternionf for \c float
   * \li \c Quaterniond for \c double
+  *
+  * \warning Operations interpreting the quaternion as rotation have undefined behavior if the quaternion is not normalized.
   *
   * \sa  class AngleAxis, class Transform
   */
@@ -218,8 +217,8 @@ struct traits<Quaternion<_Scalar,_Options> >
   typedef _Scalar Scalar;
   typedef Matrix<_Scalar,4,1,_Options> Coefficients;
   enum{
-    IsAligned = internal::traits<Coefficients>::Flags & AlignedBit,
-    Flags = IsAligned ? (AlignedBit | LvalueBit) : LvalueBit
+    Alignment = internal::traits<Coefficients>::Alignment,
+    Flags = LvalueBit
   };
 };
 }
@@ -227,13 +226,13 @@ struct traits<Quaternion<_Scalar,_Options> >
 template<typename _Scalar, int _Options>
 class Quaternion : public QuaternionBase<Quaternion<_Scalar,_Options> >
 {
-  typedef QuaternionBase<Quaternion<_Scalar,_Options> > Base;
-  enum { IsAligned = internal::traits<Quaternion>::IsAligned };
-
 public:
+  typedef QuaternionBase<Quaternion<_Scalar,_Options> > Base;
+  enum { NeedsAlignment = internal::traits<Quaternion>::Alignment>0 };
+
   typedef _Scalar Scalar;
 
-  EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Quaternion)
+  EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Quaternion)
   using Base::operator*=;
 
   typedef typename internal::traits<Quaternion>::Coefficients Coefficients;
@@ -252,7 +251,7 @@ public:
   inline Quaternion(const Scalar& w, const Scalar& x, const Scalar& y, const Scalar& z) : m_coeffs(x, y, z, w){}
 
   /** Constructs and initialize a quaternion from the array data */
-  inline Quaternion(const Scalar* data) : m_coeffs(data) {}
+  explicit inline Quaternion(const Scalar* data) : m_coeffs(data) {}
 
   /** Copy constructor */
   template<class Derived> EIGEN_STRONG_INLINE Quaternion(const QuaternionBase<Derived>& other) { this->Base::operator=(other); }
@@ -278,7 +277,11 @@ public:
   inline Coefficients& coeffs() { return m_coeffs;}
   inline const Coefficients& coeffs() const { return m_coeffs;}
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(IsAligned)
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsAlignment)
+  
+#ifdef EIGEN_QUATERNION_PLUGIN
+# include EIGEN_QUATERNION_PLUGIN
+#endif
 
 protected:
   Coefficients m_coeffs;
@@ -338,21 +341,21 @@ template<typename _Scalar, int _Options>
 class Map<const Quaternion<_Scalar>, _Options >
   : public QuaternionBase<Map<const Quaternion<_Scalar>, _Options> >
 {
+  public:
     typedef QuaternionBase<Map<const Quaternion<_Scalar>, _Options> > Base;
 
-  public:
     typedef _Scalar Scalar;
     typedef typename internal::traits<Map>::Coefficients Coefficients;
-    EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Map)
+    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Map)
     using Base::operator*=;
 
     /** Constructs a Mapped Quaternion object from the pointer \a coeffs
       *
-      * The pointer \a coeffs must reference the four coeffecients of Quaternion in the following order:
+      * The pointer \a coeffs must reference the four coefficients of Quaternion in the following order:
       * \code *coeffs == {x, y, z, w} \endcode
       *
       * If the template parameter _Options is set to #Aligned, then the pointer coeffs must be aligned. */
-    EIGEN_STRONG_INLINE Map(const Scalar* coeffs) : m_coeffs(coeffs) {}
+    explicit EIGEN_STRONG_INLINE Map(const Scalar* coeffs) : m_coeffs(coeffs) {}
 
     inline const Coefficients& coeffs() const { return m_coeffs;}
 
@@ -375,21 +378,21 @@ template<typename _Scalar, int _Options>
 class Map<Quaternion<_Scalar>, _Options >
   : public QuaternionBase<Map<Quaternion<_Scalar>, _Options> >
 {
+  public:
     typedef QuaternionBase<Map<Quaternion<_Scalar>, _Options> > Base;
 
-  public:
     typedef _Scalar Scalar;
     typedef typename internal::traits<Map>::Coefficients Coefficients;
-    EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Map)
+    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Map)
     using Base::operator*=;
 
     /** Constructs a Mapped Quaternion object from the pointer \a coeffs
       *
-      * The pointer \a coeffs must reference the four coeffecients of Quaternion in the following order:
+      * The pointer \a coeffs must reference the four coefficients of Quaternion in the following order:
       * \code *coeffs == {x, y, z, w} \endcode
       *
       * If the template parameter _Options is set to #Aligned, then the pointer coeffs must be aligned. */
-    EIGEN_STRONG_INLINE Map(Scalar* coeffs) : m_coeffs(coeffs) {}
+    explicit EIGEN_STRONG_INLINE Map(Scalar* coeffs) : m_coeffs(coeffs) {}
 
     inline Coefficients& coeffs() { return m_coeffs; }
     inline const Coefficients& coeffs() const { return m_coeffs; }
@@ -399,16 +402,16 @@ class Map<Quaternion<_Scalar>, _Options >
 };
 
 /** \ingroup Geometry_Module
-  * Map an unaligned array of single precision scalar as a quaternion */
+  * Map an unaligned array of single precision scalars as a quaternion */
 typedef Map<Quaternion<float>, 0>         QuaternionMapf;
 /** \ingroup Geometry_Module
-  * Map an unaligned array of double precision scalar as a quaternion */
+  * Map an unaligned array of double precision scalars as a quaternion */
 typedef Map<Quaternion<double>, 0>        QuaternionMapd;
 /** \ingroup Geometry_Module
-  * Map a 16-bits aligned array of double precision scalars as a quaternion */
+  * Map a 16-byte aligned array of single precision scalars as a quaternion */
 typedef Map<Quaternion<float>, Aligned>   QuaternionMapAlignedf;
 /** \ingroup Geometry_Module
-  * Map a 16-bits aligned array of double precision scalars as a quaternion */
+  * Map a 16-byte aligned array of double precision scalars as a quaternion */
 typedef Map<Quaternion<double>, Aligned>  QuaternionMapAlignedd;
 
 /***************************************************************************
@@ -442,7 +445,7 @@ QuaternionBase<Derived>::operator* (const QuaternionBase<OtherDerived>& other) c
    YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
   return internal::quat_product<Architecture::Target, Derived, OtherDerived,
                          typename internal::traits<Derived>::Scalar,
-                         internal::traits<Derived>::IsAligned && internal::traits<OtherDerived>::IsAligned>::run(*this, other);
+                         EIGEN_PLAIN_ENUM_MIN(internal::traits<Derived>::Alignment, internal::traits<OtherDerived>::Alignment)>::run(*this, other);
 }
 
 /** \sa operator*(Quaternion) */
@@ -463,12 +466,12 @@ EIGEN_STRONG_INLINE Derived& QuaternionBase<Derived>::operator*= (const Quaterni
   */
 template <class Derived>
 EIGEN_STRONG_INLINE typename QuaternionBase<Derived>::Vector3
-QuaternionBase<Derived>::_transformVector(Vector3 v) const
+QuaternionBase<Derived>::_transformVector(const Vector3& v) const
 {
     // Note that this algorithm comes from the optimization by hand
     // of the conversion to a Matrix followed by a Matrix/Vector product.
     // It appears to be much faster than the common algorithm found
-    // in the litterature (30 versus 39 flops). It also requires two
+    // in the literature (30 versus 39 flops). It also requires two
     // Vector3 as temporaries.
     Vector3 uv = this->vec().cross(v);
     uv += uv;
@@ -572,14 +575,13 @@ template<class Derived>
 template<typename Derived1, typename Derived2>
 inline Derived& QuaternionBase<Derived>::setFromTwoVectors(const MatrixBase<Derived1>& a, const MatrixBase<Derived2>& b)
 {
-  using std::max;
   using std::sqrt;
   Vector3 v0 = a.normalized();
   Vector3 v1 = b.normalized();
   Scalar c = v1.dot(v0);
 
   // if dot == -1, vectors are nearly opposites
-  // => accuraletly compute the rotation axis by computing the
+  // => accurately compute the rotation axis by computing the
   //    intersection of the two planes. This is done by solving:
   //       x^T v0 = 0
   //       x^T v1 = 0
@@ -588,7 +590,7 @@ inline Derived& QuaternionBase<Derived>::setFromTwoVectors(const MatrixBase<Deri
   //    which yields a singular value problem
   if (c < Scalar(-1)+NumTraits<Scalar>::dummy_precision())
   {
-    c = max<Scalar>(c,-1);
+    c = numext::maxi(c,Scalar(-1));
     Matrix<Scalar,2,3> m; m << v0.transpose(), v1.transpose();
     JacobiSVD<Matrix<Scalar,2,3> > svd(m, ComputeFullV);
     Vector3 axis = svd.matrixV().col(2);
@@ -639,7 +641,7 @@ inline Quaternion<typename internal::traits<Derived>::Scalar> QuaternionBase<Der
 {
   // FIXME should this function be called multiplicativeInverse and conjugate() be called inverse() or opposite()  ??
   Scalar n2 = this->squaredNorm();
-  if (n2 > 0)
+  if (n2 > Scalar(0))
     return Quaternion<Scalar>(conjugate().coeffs() / n2);
   else
   {
@@ -648,6 +650,16 @@ inline Quaternion<typename internal::traits<Derived>::Scalar> QuaternionBase<Der
   }
 }
 
+// Generic conjugate of a Quaternion
+namespace internal {
+template<int Arch, class Derived, typename Scalar, int _Options> struct quat_conj
+{
+  static EIGEN_STRONG_INLINE Quaternion<Scalar> run(const QuaternionBase<Derived>& q){
+    return Quaternion<Scalar>(q.w(),-q.x(),-q.y(),-q.z());
+  }
+};
+}
+                         
 /** \returns the conjugate of the \c *this which is equal to the multiplicative inverse
   * if the quaternion is normalized.
   * The conjugate of a quaternion represents the opposite rotation.
@@ -658,7 +670,10 @@ template <class Derived>
 inline Quaternion<typename internal::traits<Derived>::Scalar>
 QuaternionBase<Derived>::conjugate() const
 {
-  return Quaternion<Scalar>(this->w(),-this->x(),-this->y(),-this->z());
+  return internal::quat_conj<Architecture::Target, Derived,
+                         typename internal::traits<Derived>::Scalar,
+                         internal::traits<Derived>::Alignment>::run(*this);
+                         
 }
 
 /** \returns the angle (in radian) between two rotations
@@ -669,16 +684,19 @@ template <class OtherDerived>
 inline typename internal::traits<Derived>::Scalar
 QuaternionBase<Derived>::angularDistance(const QuaternionBase<OtherDerived>& other) const
 {
-  using std::acos;
+  using std::atan2;
   using std::abs;
-  double d = abs(this->dot(other));
-  if (d>=1.0)
-    return Scalar(0);
-  return static_cast<Scalar>(2 * acos(d));
+  Quaternion<Scalar> d = (*this) * other.conjugate();
+  return Scalar(2) * atan2( d.vec().norm(), abs(d.w()) );
 }
 
+ 
+    
 /** \returns the spherical linear interpolation between the two quaternions
-  * \c *this and \a other at the parameter \a t
+  * \c *this and \a other at the parameter \a t in [0;1].
+  * 
+  * This represents an interpolation for a constant motion between \c *this and \a other,
+  * see also http://en.wikipedia.org/wiki/Slerp.
   */
 template <class Derived>
 template <class OtherDerived>
@@ -709,7 +727,7 @@ QuaternionBase<Derived>::slerp(const Scalar& t, const QuaternionBase<OtherDerive
     scale0 = sin( ( Scalar(1) - t ) * theta) / sinTheta;
     scale1 = sin( ( t * theta) ) / sinTheta;
   }
-  if(d<0) scale1 = -scale1;
+  if(d<Scalar(0)) scale1 = -scale1;
 
   return Quaternion<Scalar>(scale0 * coeffs() + scale1 * other.coeffs());
 }
@@ -721,9 +739,9 @@ template<typename Other>
 struct quaternionbase_assign_impl<Other,3,3>
 {
   typedef typename Other::Scalar Scalar;
-  typedef DenseIndex Index;
-  template<class Derived> static inline void run(QuaternionBase<Derived>& q, const Other& mat)
+  template<class Derived> static inline void run(QuaternionBase<Derived>& q, const Other& a_mat)
   {
+    const typename internal::nested_eval<Other,2>::type mat(a_mat);
     using std::sqrt;
     // This algorithm comes from  "Quaternion Calculus and Fast Animation",
     // Ken Shoemake, 1987 SIGGRAPH course notes
@@ -739,13 +757,13 @@ struct quaternionbase_assign_impl<Other,3,3>
     }
     else
     {
-      DenseIndex i = 0;
+      Index i = 0;
       if (mat.coeff(1,1) > mat.coeff(0,0))
         i = 1;
       if (mat.coeff(2,2) > mat.coeff(i,i))
         i = 2;
-      DenseIndex j = (i+1)%3;
-      DenseIndex k = (j+1)%3;
+      Index j = (i+1)%3;
+      Index k = (j+1)%3;
 
       t = sqrt(mat.coeff(i,i)-mat.coeff(j,j)-mat.coeff(k,k) + Scalar(1.0));
       q.coeffs().coeffRef(i) = Scalar(0.5) * t;

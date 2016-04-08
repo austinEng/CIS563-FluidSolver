@@ -28,7 +28,7 @@ namespace Eigen {
   *      * AngleAxisf(ea[2], Vector3f::UnitZ()); \endcode
   * This corresponds to the right-multiply conventions (with right hand side frames).
   * 
-  * The returned angles are in the ranges [0:pi]x[0:pi]x[-pi:pi].
+  * The returned angles are in the ranges [0:pi]x[-pi:pi]x[-pi:pi].
   * 
   * \sa class AngleAxis
   */
@@ -55,7 +55,7 @@ MatrixBase<Derived>::eulerAngles(Index a0, Index a1, Index a2) const
     res[0] = atan2(coeff(j,i), coeff(k,i));
     if((odd && res[0]<Scalar(0)) || ((!odd) && res[0]>Scalar(0)))
     {
-      res[0] = (res[0] > Scalar(0)) ? res[0] - Scalar(M_PI) : res[0] + Scalar(M_PI);
+      res[0] = (res[0] > Scalar(0)) ? res[0] - Scalar(EIGEN_PI) : res[0] + Scalar(EIGEN_PI);
       Scalar s2 = Vector2(coeff(j,i), coeff(k,i)).norm();
       res[1] = -atan2(s2, coeff(i,i));
     }
@@ -84,7 +84,7 @@ MatrixBase<Derived>::eulerAngles(Index a0, Index a1, Index a2) const
     res[0] = atan2(coeff(j,k), coeff(k,k));
     Scalar c2 = Vector2(coeff(i,i), coeff(i,j)).norm();
     if((odd && res[0]<Scalar(0)) || ((!odd) && res[0]>Scalar(0))) {
-      res[0] = (res[0] > Scalar(0)) ? res[0] - Scalar(M_PI) : res[0] + Scalar(M_PI);
+      res[0] = (res[0] > Scalar(0)) ? res[0] - Scalar(EIGEN_PI) : res[0] + Scalar(EIGEN_PI);
       res[1] = atan2(-coeff(i,k), -c2);
     }
     else

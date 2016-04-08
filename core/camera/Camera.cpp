@@ -19,8 +19,8 @@ Camera::Camera(int w, int h) :
         up(glm::cross(right, look)),
         rotation(glm::mat4(1.f)) {
 
-    //rotation = glm::rotate(rotation, -PI/4, glm::vec3(1,0,0));
-    //rotation = glm::rotate(rotation, -PI/2, glm::vec3(0,1,0));
+    rotation = glm::rotate(rotation, -PI/6, glm::vec3(1,0,0));
+    rotation = glm::rotate(rotation, -PI/8, glm::vec3(0,1,0));
 
     recomputeEye();
     recompute();

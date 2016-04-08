@@ -30,6 +30,7 @@ public:
     Grid<float> _gW_old;
     Grid<float> _gP;
     Grid<int> _gType;
+//    Grid<float> _gDiv;
 
 private:
     std::vector<T> _contents;

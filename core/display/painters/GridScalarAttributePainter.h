@@ -60,6 +60,7 @@ private:
     GLint unifSizeEnd;
     GLint unifRangeStart;
     GLint unifRangeEnd;
+    GLint unifType;
 
     GLint unifCellSize;
     GLint unifCellCount;
