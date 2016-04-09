@@ -28,9 +28,9 @@ public:
     glm::vec3 dim() const;
     glm::vec3 center() const;
 
-    virtual bool contains(const glm::vec3 &pt);
-    virtual bool collidesPt(const glm::vec3 &pt, glm::vec3 &normal, float tolerance = 0.001f);
-    virtual bool collides(const glm::vec3 &prev, const glm::vec3 &next, glm::vec3 &normal);
+    virtual bool contains(const glm::vec3 &pt) const;
+    virtual bool collidesPt(const glm::vec3 &pt, glm::vec3 &normal, float tolerance = 0.001f) const;
+    virtual bool collides(const glm::vec3 &prev, const glm::vec3 &next, glm::vec3 &normal) const;
 
 private:
     float _minX;

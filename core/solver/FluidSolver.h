@@ -19,7 +19,7 @@ public:
     ~FluidSolver();
 
     void setContainer(GeoObject* container);
-    void addFluid(GeoObject* fluid);
+    void addFluid(const GeoObject &fluid);
     void init();
 
     void projectVelocitiesToGrid();

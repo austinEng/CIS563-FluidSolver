@@ -140,16 +140,15 @@ template <typename T> glm::vec3 Grid<T>::fractionalIndexOf(const glm::vec3 &pos)
 }
 
 template <typename T> glm::ivec3 Grid<T>::toIJK(const std::size_t index) const {
-    int i = (int) (index % _countZ);
-    int j = (int) ((index / _countZ) % _countY);
-    int k = (int) (index / (_countY * _countZ));
+    size_t i,j,k;
+    toIJK(index, i,j,k);
     return glm::ivec3(i,j,k);
 }
 
 template <typename T> void Grid<T>::toIJK(const std::size_t index, size_t &i, size_t &j, size_t &k) const {
-    i = (index % _countZ);
-    j = ((index / _countZ) % _countY);
-    k = (index / (_countY * _countZ));
+    i = (index % _countX);
+    j = ((index / _countX) % _countY);
+    k = (index / (_countX * _countY));
 }
 
 template <typename T> std::size_t Grid<T>::fromIJK(const std::size_t i, const std::size_t j, const std::size_t k) const {

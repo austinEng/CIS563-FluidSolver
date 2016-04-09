@@ -41,13 +41,13 @@ glm::vec3 Bound::dim() const { return glm::vec3(_maxX - _minX, _maxY - _minY, _m
 
 glm::vec3 Bound::center() const { return glm::vec3((_minX + _maxX) / 2.f, (_minY + _maxY) / 2.f, (_minZ + _maxZ) / 2.f); }
 
-bool Bound::contains(const glm::vec3 &pt) {
+bool Bound::contains(const glm::vec3 &pt) const {
     return (pt.x >= _minX && pt.x < _maxX &&
             pt.y >= _minY && pt.y < _maxY &&
             pt.z >= _minZ && pt.z < _maxZ);
 }
 
-bool Bound::collidesPt(const glm::vec3 &pt, glm::vec3 &normal, float tolerance) {
+bool Bound::collidesPt(const glm::vec3 &pt, glm::vec3 &normal, float tolerance) const {
     if (fequal(pt.x, _minX, tolerance)) {
         if (pt.y >= _minY && pt.y < _maxY && pt.z >= _minZ && pt.z < _maxZ) {
             if (pt.x < _minX) {
@@ -108,7 +108,7 @@ bool Bound::collidesPt(const glm::vec3 &pt, glm::vec3 &normal, float tolerance) 
     return false;
 }
 
-bool Bound::collides(const glm::vec3 &prev, const glm::vec3 &next, glm::vec3 &normal) {
+bool Bound::collides(const glm::vec3 &prev, const glm::vec3 &next, glm::vec3 &normal) const {
     if (prev.y >= _minY && prev.y < _maxY && prev.z >= _minZ && prev.z < _maxZ) {
         if (prev.x > _minX && next.x <= _minX) {        // cross minX plane
             normal = glm::vec3(1.f, 0.f, 0.f);

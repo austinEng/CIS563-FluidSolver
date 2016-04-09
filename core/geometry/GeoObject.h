@@ -13,7 +13,7 @@ public:
     GeoObject() { }
     virtual ~GeoObject() {}
     virtual void computeBound() = 0;
-    Bound& bound() { return _bound; }
+    const Bound& bound() const { return _bound; }
 
 protected:
     Bound _bound;

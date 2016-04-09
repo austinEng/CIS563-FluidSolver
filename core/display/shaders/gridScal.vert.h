@@ -40,7 +40,6 @@ void main() {
     } else {
         amount = (f_data - u_rangeStart) / (u_rangeEnd - u_rangeStart);
     }
-    amount = (float(i_data) - u_rangeStart) / (u_rangeEnd - u_rangeStart);
 
     gl_PointSize = u_sizeStart  + amount * (u_sizeEnd - u_sizeStart);
 }

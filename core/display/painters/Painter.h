@@ -17,7 +17,7 @@ protected:
     GLuint prog;
 
     GLuint compileShader(const char* shader, GLenum type);
-    GLuint makeProgram(std::vector<GLuint> programs);
+    GLuint makeProgram(const std::vector<GLuint> &programs);
 };
 
 

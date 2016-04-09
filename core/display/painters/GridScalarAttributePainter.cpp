@@ -80,18 +80,19 @@ GridScalarAttributePainter::GridScalarAttributePainter(Grid<T> *grid, float rang
         glGenBuffers(1, &attribute_buffer);
         glBindBuffer(GL_ARRAY_BUFFER, attribute_buffer);
         glBufferData(GL_ARRAY_BUFFER, MAX_ATTRIBUTES * sizeof(float), NULL, GL_STREAM_DRAW);
-
-        glUniform1i(unifType, 0);
     } else if (type == INT) {
         glGenBuffers(1, &attribute_buffer);
         glBindBuffer(GL_ARRAY_BUFFER, attribute_buffer);
         glBufferData(GL_ARRAY_BUFFER, MAX_ATTRIBUTES * sizeof(int), NULL, GL_STREAM_DRAW);
-
-        glUniform1i(unifType, 1);
     }
 
     // set grid uniforms
     glUseProgram(prog);
+    if (type == FLOAT) {
+        glUniform1i(unifType, 0);
+    } else if (type == INT) {
+        glUniform1i(unifType, 1);
+    }
     glUniform1f(unifCellSize, grid->_cellSize);
     glm::ivec3 count = glm::ivec3(grid->_countX, grid->_countY, grid->_countZ);
     glUniform3iv(unifCellCount, 1, &(count.x));

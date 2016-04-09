@@ -29,7 +29,7 @@ GLuint Painter::compileShader(const char* shader, GLenum type) {
     return shaderId;
 }
 
-GLuint Painter::makeProgram(std::vector<GLuint> programs) {
+GLuint Painter::makeProgram(const std::vector<GLuint> &programs) {
     GLuint prog = glCreateProgram();
     for (GLuint program : programs) {
         glAttachShader(prog, program);

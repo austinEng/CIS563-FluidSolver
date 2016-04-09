@@ -14,13 +14,13 @@ public:
     Box(float cX, float cY, float cZ, const glm::vec3 &dim);
     Box(float minX, float minY, float minZ, float maxX, float maxY, float maxZ);
 
-    virtual bool contains(const glm::vec3 &pt) {
+    virtual bool contains(const glm::vec3 &pt) const {
         return _bound.contains(pt);
     }
-    virtual bool collidesPt(const glm::vec3 &pt, glm::vec3 &normal, float tolerance = 0.001f) {
+    virtual bool collidesPt(const glm::vec3 &pt, glm::vec3 &normal, float tolerance = 0.001f) const {
         return _bound.collidesPt(pt, normal, tolerance);
     }
-    virtual bool collides(const glm::vec3 &prev, const glm::vec3 &next, glm::vec3 &normal) {
+    virtual bool collides(const glm::vec3 &prev, const glm::vec3 &next, glm::vec3 &normal) const {
         return _bound.collides(prev, next, normal);
     }
 

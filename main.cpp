@@ -23,9 +23,11 @@ int main(int argc, char* argv[]) {
     GridVectorAttributePainter vPainter (&solver->_MAC._gV, 3.f, glm::vec3(0,1,0), glm::vec3(0,0.2,0));
     GridVectorAttributePainter wPainter (&solver->_MAC._gW, 3.f, glm::vec3(0,0,1), glm::vec3(0,0,0.2));
     GridScalarAttributePainter tPainter (
-            &solver->_MAC._gType, 0.f, 1.f, 2.f, 7.f, glm::vec3(0,0,0), glm::vec3(0,0,1));
-    GridScalarAttributePainter pPainter (
-            &solver->_MAC._gP, 0.f, 20.f, 0.f, 10.f, glm::vec3(1,1,0), glm::vec3(1,0,0));
+            &solver->_MAC._gType, 0.f, 1.f, 0.f, 7.f, glm::vec3(0,0,0), glm::vec3(0,0,1));
+    GridScalarAttributePainter posPressurePainter (
+            &solver->_MAC._gP, 0.f, 100.f, 0.f, 5.f, glm::vec3(1,1,0), glm::vec3(1,0,0));
+    GridScalarAttributePainter negPressurePainter (
+            &solver->_MAC._gP, 0.f, -100.f, 0.f, 5.f, glm::vec3(0,1,1), glm::vec3(0,0,1));
 
     window->addPainter(&particlesPainter);
     window->addPainter(&boxPainter);
@@ -33,7 +35,8 @@ int main(int argc, char* argv[]) {
     window->addPainter(&vPainter);
     window->addPainter(&wPainter);
     window->addPainter(&tPainter);
-    window->addPainter(&pPainter);
+    window->addPainter(&posPressurePainter);
+    window->addPainter(&negPressurePainter);
 
     window->loadSceneCB = [](void*) {
         std::cout << "what" << std::endl;
@@ -63,10 +66,12 @@ int main(int argc, char* argv[]) {
             particlesWriter.writeData(solver, filename);
         }
     });
+//    solver->update(0.1f);
 
     std::cout << "Average compute time: " << totalComputeTime / frame << " seconds" << std::endl;
 
     delete window;
+    delete solver;
 
     return 0;
 }
