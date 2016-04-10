@@ -18,9 +18,9 @@ out float g_data;
 void main() {
     g_data = v_data;
 
-    int i = int(mod(gl_VertexID, u_cellCount.z));
-    int j = int(mod(gl_VertexID / u_cellCount.z, u_cellCount.y));
-    int k = int(gl_VertexID / (u_cellCount.y * u_cellCount.z));
+    int i = int(mod(gl_VertexID, u_cellCount.x));
+    int j = int(mod(gl_VertexID / u_cellCount.x, u_cellCount.y));
+    int k = int(gl_VertexID / (u_cellCount.x * u_cellCount.y));
 
     vec3 pos = vec3(float(i), float(j), float(k)) * u_cellSize + u_origin;
 

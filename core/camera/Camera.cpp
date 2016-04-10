@@ -6,8 +6,8 @@
 
 Camera::Camera(int w, int h) :
         zoom(25),
-        eye(glm::vec3(0,0,zoom)),
-        tgt(glm::vec3(0,0,0)),
+        eye(glm::vec3(0,-5,zoom)),
+        tgt(glm::vec3(0,-5,0)),
         width(w),
         height(h),
         fovy(45),

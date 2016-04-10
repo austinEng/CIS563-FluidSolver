@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     window->addPainter(&uPainter);
     window->addPainter(&vPainter);
     window->addPainter(&wPainter);
-    window->addPainter(&tPainter);
+//    window->addPainter(&tPainter);
     window->addPainter(&posPressurePainter);
     window->addPainter(&negPressurePainter);
 

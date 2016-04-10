@@ -118,12 +118,19 @@ template <typename T> glm::ivec3 Grid<T>::indexOf(const glm::vec3 &pos) const {
 
 template <typename T> void Grid<T>::indexOf(const glm::vec3 &pos, size_t &i, size_t &j, size_t &k) const {
     glm::vec3 indices = (pos - _offset - _origin) / _cellSize;
-    i = (size_t) ((indices.x < _countX) * indices.x + (indices.x > _countX-1) * (_countX-1)); // clamp at countX
-    j = (size_t) ((indices.y < _countY) * indices.y + (indices.y > _countY-1) * (_countY-1)); // clamp at countY
-    k = (size_t) ((indices.z < _countZ) * indices.z + (indices.z > _countZ-1) * (_countZ-1)); // clamp at countZ
-//    i = (i > 0) * i;
-//    j = (j > 0) * j;
-//    k = (k > 0) * k;
+    indices = glm::clamp(indices, glm::vec3(0,0,0), glm::vec3(_countX-1, _countY-1, _countZ-1));
+    i = (size_t) indices.x;
+    j = (size_t) indices.y;
+    k = (size_t) indices.z;
+//    int ii = ((indices.x < _countX) * indices.x + (indices.x > _countX-1) * (_countX-1)); // clamp at countX
+//    int jj = ((indices.y < _countY) * indices.y + (indices.y > _countY-1) * (_countY-1)); // clamp at countY
+//    int kk = ((indices.z < _countZ) * indices.z + (indices.z > _countZ-1) * (_countZ-1)); // clamp at countZ
+//    ii = (ii > 0) * ii;
+//    jj = (jj > 0) * jj;
+//    kk = (kk > 0) * kk;
+//    i = ii;
+//    j = jj;
+//    k = kk;
 }
 
 
