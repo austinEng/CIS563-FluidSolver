@@ -6,6 +6,7 @@
 #define FLUIDSOLVER_PARTICLESWRITER_H
 
 #include <openvdb/openvdb.h>
+//#include <openvdb_points/openvdb.h>
 #include <core/solver/FluidSolver.h>
 
 class ParticlesWriter {

@@ -35,7 +35,7 @@ public:
     void update(float step = 0.04166f);
 
     GeoObject* _container;
-    MACGrid<std::vector<FluidParticle*> > _MAC;
+    MACGrid<std::vector<FluidParticle*> >* _MAC;
 
 private:
     std::vector<FluidParticle> _particles;
