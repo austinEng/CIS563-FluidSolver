@@ -707,7 +707,7 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
                 for (size_t k = sk; k < ek; k++) {
                     for (FluidParticle const *particle : _MAC->atIdx(i, j, k)) {
                         float dist = glm::distance2(particle->pos, gridPos);
-                        float weight = kernel(dist, 4*radius*radius);
+                        float weight = kernel(dist, 2*radius*radius);
                         totalWeight += weight;
                     }
                 }
@@ -726,7 +726,7 @@ template<typename T> void FluidSolver::particleAttributeToGrid(std::size_t offse
                 for (size_t k = sk; k < ek; k++) {
                     for (FluidParticle const *particle : _MAC->atIdx(i, j, k)) {
                         float dist = glm::distance2(particle->pos, gridPos);
-                        float weight = kernel(dist, 4*radius*radius);
+                        float weight = kernel(dist, 2*radius*radius);
                         void *address = (void *) particle + offset;
                         std::memcpy(&temp, address, attributeSize);
                         gridVal += temp * (weight / totalWeight);

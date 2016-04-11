@@ -5,6 +5,7 @@
 #include "Window.h"
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 
 static void error_callback(int error, const char* description) {
     fputs(description, stderr);
@@ -33,6 +34,7 @@ Window::Window(int w, int h, const char* title) : _window(nullptr), camera(w, h)
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
     _window = glfwCreateWindow(w, h, title, NULL, NULL);
+    pixels.resize(_w*_h*4);
 
     if (!_window) {
         glfwTerminate();
@@ -48,6 +50,18 @@ Window::Window(int w, int h, const char* title) : _window(nullptr), camera(w, h)
         fprintf(stderr, "Failed to initialize GLEW\n");
         exit(EXIT_FAILURE);
     }
+
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 Window::~Window() {
@@ -210,6 +224,48 @@ void Window::setupInputCBs() {
     });
 }
 
+//https://danielbeard.wordpress.com/2011/06/06/image-saving-code-c/
+void Window::saveImage(const std::string &filename) {
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glViewport(0,0,_w,_h);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    for (Painter* painter : _painters) {
+        painter->draw();
+    }
+//    std::vector<char> pixels(this->_w*this->_h*4);
+
+    glReadPixels(0,0,_w,_h, GL_BGRA, GL_UNSIGNED_BYTE, &(pixels[0]));
+
+    std::ofstream o(filename.c_str(), std::ios::out | std::ios::binary);
+    o.put(0);
+    o.put(0);
+    o.put(2);                         /* uncompressed RGB */
+    o.put(0); 		o.put(0);
+    o.put(0); 	o.put(0);
+    o.put(0);
+    o.put(0); 	o.put(0);           /* X origin */
+    o.put(0); 	o.put(0);           /* y origin */
+    o.put((_w & 0x00FF));
+    o.put((_w & 0xFF00) / 256);
+    o.put((_h & 0x00FF));
+    o.put((_h & 0xFF00) / 256);
+    o.put(32);                        /* 24 bit bitmap */
+    o.put(0);
+
+    for (int i=0;i<_w*_h*4;i+=4) {
+//        std::cout << (unsigned int)pixels[i] << "," << (unsigned int)pixels[i+1] << "," << (unsigned int)pixels[i+2] << "," << (unsigned int)pixels[i+3] << std::endl;
+        o.put(pixels[i+0]);
+        o.put(pixels[i+1]);
+        o.put(pixels[i+2]);
+        o.put(255);
+    }
+
+    o.close();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void Window::initloop(std::function<void(void)> predraw) {
     GLuint vao;
     glGenVertexArrays(1, &vao);
@@ -231,6 +287,7 @@ void Window::initloop(std::function<void(void)> predraw) {
         for (Painter* painter : _painters) {
             painter->draw();
         }
+
 
 //        TwDraw();
 

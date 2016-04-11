@@ -21,6 +21,8 @@ public:
     ~Window();
     void initloop(std::function<void(void)> predraw = [](){});
 
+    void saveImage(const std::string &filename);
+
     void addPainter(Painter* painter);
     void removePainter(Painter* painter);
 
@@ -34,6 +36,10 @@ private:
     std::vector<Painter*> _painters;
     Camera camera;
     void updateCamera();
+
+    GLuint texture;
+    GLuint fbo;
+    std::vector<char> pixels;
 
     int _w;
     int _h;

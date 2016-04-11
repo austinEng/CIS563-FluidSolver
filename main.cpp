@@ -31,12 +31,12 @@ int main(int argc, char* argv[]) {
 
     window->addPainter(&particlesPainter);
     window->addPainter(&boxPainter);
-    window->addPainter(&uPainter);
-    window->addPainter(&vPainter);
-    window->addPainter(&wPainter);
+//    window->addPainter(&uPainter);
+//    window->addPainter(&vPainter);
+//    window->addPainter(&wPainter);
 //    window->addPainter(&tPainter);
-    window->addPainter(&posPressurePainter);
-    window->addPainter(&negPressurePainter);
+//    window->addPainter(&posPressurePainter);
+//    window->addPainter(&negPressurePainter);
 
     window->loadSceneCB = [](void*) {
         std::cout << "what" << std::endl;
@@ -62,7 +62,8 @@ int main(int argc, char* argv[]) {
 
             std::string filename = "particles_";
             filename.append(std::to_string(++frame));
-            filename.append(".vdb");
+            filename.append(".tga");
+            window->saveImage(filename);
 //            particlesWriter.writeData(solver, filename);
         }
     });

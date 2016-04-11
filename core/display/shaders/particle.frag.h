@@ -13,7 +13,8 @@ in vec3 f_vel;
 out vec4 out_Col;
 
 void main() {
-    vec3 col = f_col * (1.0 + length(f_vel) / 8.0);
+    float fac = length(f_vel) / 20.0;
+    vec3 col = f_col + vec3(fac,fac,fac);
     out_Col = vec4(col, 1);
 }
 )";
