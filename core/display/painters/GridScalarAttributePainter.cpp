@@ -111,7 +111,9 @@ void GridScalarAttributePainter::draw() const {
     if (type == FLOAT) {
         if (_attributesF != nullptr) {
 //            for (float f : *_attributesF) {
-//                std:: cout << f << std::endl;
+//                if (!fequal(f, 0.f) && f < 0) {
+//                    std:: cout << f << std::endl;
+//                }
 //            }
 
             glUseProgram(prog);

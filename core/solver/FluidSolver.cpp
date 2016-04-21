@@ -11,6 +11,7 @@
 #include <tbb/parallel_reduce.h>
 #include <tbb/blocked_range3d.h>
 #include <Eigen/Sparse>
+#include <iostream>
 
 
 float FluidSolver::g = -9.80665f;
@@ -27,14 +28,14 @@ FluidSolver::~FluidSolver() {
 void FluidSolver::setContainer(GeoObject* container) {
     _container = container;
     glm::vec3 size = _container->bound().dim();
-    glm::vec3 origin = (_container->bound().center() - size) / 2.f;
-//    _MAC = MACGrid<std::vector<FluidParticle*> >(
-//            origin - glm::vec3(_cell_size, _cell_size, _cell_size),
-//            size + 2.f*glm::vec3(_cell_size, _cell_size, _cell_size),
-//            _cell_size
-//    );
-    _MAC = new MACGrid<std::vector<FluidParticle*> >(origin, size, _cell_size);
-/*
+    glm::vec3 origin = (_container->bound().center() - size / 2.f);
+    _MAC = new MACGrid<std::vector<FluidParticle*> >(
+            origin - glm::vec3(_cell_size, _cell_size, _cell_size),
+            size + 2.f*glm::vec3(_cell_size, _cell_size, _cell_size),
+            _cell_size
+    );
+//    _MAC = new MACGrid<std::vector<FluidParticle*> >(origin, size, _cell_size);
+
     std::function<void(size_t, size_t, size_t)> setSolid = [&](size_t i, size_t j, size_t k) {
         _MAC->_gType(i,j,k) = SOLID;
     };
@@ -45,7 +46,7 @@ void FluidSolver::setContainer(GeoObject* container) {
     _MAC->_gType.iterateRegion(0,_MAC->_gType.countY()-1,0, _MAC->_gType.countX(),_MAC->_gType.countY(),_MAC->_gType.countZ(), setSolid);
     _MAC->_gType.iterateRegion(0,0,0, _MAC->_gType.countX(),_MAC->_gType.countY(),1, setSolid);
     _MAC->_gType.iterateRegion(0,0,_MAC->_gType.countZ()-1, _MAC->_gType.countX(),_MAC->_gType.countY(),_MAC->_gType.countZ(), setSolid);
-*/
+
     /*_MAC = MACGrid<std::vector<FluidParticle*> >(
             origin,
             size,
@@ -106,6 +107,7 @@ void FluidSolver::addFluid(const GeoObject &fluid) {
             }
         }
     }
+    std::cout << "Added " << _particles.size() << " particles" << std::endl;
 }
 
 void FluidSolver::init() {
@@ -236,23 +238,42 @@ void FluidSolver::transferVelocitiesToParticles() {
 }
 
 void FluidSolver::enforceBoundary() {
-//    _MAC->_gType.iterate([&](size_t i, size_t j, size_t k) {
-//        switch (_MAC->_gType(i,j,k)) {
-//            case EMPTY:break;
-//            case FLUID:break;
-//            case SOLID:
-//                size_t si, ei, sj, ej, sk, ek;
-//                _MAC->_gType.getNeighboorhood(i,j,k,1,si,ei,sj,ej,sk,ek);
-//                _MAC->_gU(i,j,k) = 0;//std::min(_MAC->_gU(i,j,k), 0.f);
-//                _MAC->_gU(ei-1,j,k) = 0;//std::max(_MAC->_gU(ei-1,j,k), 0.f);
-//                _MAC->_gV(i,j,k) = 0;//std::min(_MAC->_gV(i,j,k), 0.f);
-//                _MAC->_gV(i,ej-1,k) = 0;//std::max(_MAC->_gV(i,ej-1,k), 0.f);
-//                _MAC->_gW(i,j,k) = 0;//std::min(_MAC->_gW(i,j,k), 0.f);
-//                _MAC->_gW(i,j,ek-1) = 0;//std::max(_MAC->_gW(i,j,ek-1), 0.f);
-//                break;
-//            default:break;
-//        }
-//    });
+    _MAC->_gType.iterate([&](size_t i, size_t j, size_t k) {
+        switch (_MAC->_gType(i,j,k)) {
+            case EMPTY:break;
+            case FLUID:break;
+            case SOLID:
+                /*_MAC->_gU(i,j,k) = 0;
+                _MAC->_gV(i,j,k) = 0;
+                _MAC->_gW(i,j,k) = 0;
+                _MAC->_gU(i+1,j,k) = 0;
+                _MAC->_gV(i,j+1,k) = 0;
+                _MAC->_gW(i,j,k+1) = 0;
+                */
+                if (i == 0 || _MAC->_gType(i-1,j,k) != SOLID) {
+                    _MAC->_gU(i,j,k) = 0;
+                }
+                if (i == _MAC->_gType.countX() - 1 || _MAC->_gType(i+1,j,k) != SOLID) {
+                    _MAC->_gU(i+1,j,k) = 0;
+                }
+                if (j == 0 || _MAC->_gType(i,j-1,k) != SOLID) {
+                    _MAC->_gV(i,j,k) = 0;
+                }
+                if (j == _MAC->_gType.countY() - 1 || _MAC->_gType(i,j+1,k) != SOLID) {
+                    _MAC->_gV(i,j+1,k) = 0;
+                }
+                if (k == 0 || _MAC->_gType(i,j,k-1) != SOLID) {
+                    _MAC->_gW(i,j,k) = 0;
+                }
+                if (k == _MAC->_gType.countZ() - 1 || _MAC->_gType(i,j,k+1) != SOLID) {
+                    _MAC->_gW(i,j,k+1) = 0;
+                }
+                break;
+            default:break;
+        }
+    });
+    //return;
+
 
     _MAC->_gU.iterateRegion(0,0,0, 1,_MAC->_gU.countY(),_MAC->_gU.countZ(), [&](size_t i, size_t j, size_t k) {
         _MAC->_gU(i,j,k) = 0;
@@ -274,24 +295,24 @@ void FluidSolver::enforceBoundary() {
     });
 }
 
-inline void pressureMatrixHelper(std::vector<Eigen::Triplet<float>> &coeffs, const Grid<int> &grid, size_t &IDX,
+inline void pressureMatrixHelper(std::vector<Eigen::Triplet<double>> &coeffs, const Grid<int> &grid, size_t &IDX,
                                  int &count, const float &scale, size_t i, size_t j, size_t k) {
     size_t idx = grid.fromIJK(i,j,k);
     if (grid(i,j,k) == FLUID || grid(i,j,k) == EMPTY) {
         count++;
         if (grid(i,j,k) == FLUID) {
-            coeffs.push_back(Eigen::Triplet<float>(IDX, idx, -scale));
+            coeffs.push_back(Eigen::Triplet<double>(IDX, idx, -scale));
         }
     }
 }
 
 void FluidSolver::pressureSolve(float step) {
-    typedef Eigen::Triplet<float> T;
+    typedef Eigen::Triplet<double> T;
     std::vector<T> coefficientsA;
     std::vector<T> coefficientsB;
-    Eigen::SparseMatrix<float> A(_MAC->_gType.size(), _MAC->_gType.size());
-    Eigen::SparseMatrix<float> b(_MAC->_gType.size(), 1);
-    Eigen::SparseVector<float> x(_MAC->_gType.size());
+    Eigen::SparseMatrix<double> A(_MAC->_gType.size(), _MAC->_gType.size());
+    Eigen::SparseMatrix<double> b(_MAC->_gType.size(), 1);
+    Eigen::SparseVector<double> x(_MAC->_gType.size());
     A.setZero();
     b.setZero();
     x.setZero();
@@ -330,6 +351,25 @@ void FluidSolver::pressureSolve(float step) {
             -(_MAC->_gV(I,J+1,K) - _MAC->_gV(I,J,K)) / _cell_size +
             -(_MAC->_gW(I,J,K+1) - _MAC->_gW(I,J,K)) / _cell_size;
 
+            if (I == 0 || _MAC->_gType(I-1,J,K) == SOLID) {
+                div += (_MAC->_gU(I,J,K) - 0) / _cell_size;
+            }
+            if (I == _MAC->_gType.countX() - 1 || _MAC->_gType(I+1,J,K) == SOLID) {
+                div += (0 - _MAC->_gU(I+1,J,K)) / _cell_size;
+            }
+            if (J == 0 || _MAC->_gType(I,J-1,K) == SOLID) {
+                div += (_MAC->_gV(I,J,K) - 0) / _cell_size;
+            }
+            if (J == _MAC->_gType.countY() - 1 || _MAC->_gType(I,J+1,K) == SOLID) {
+                div += (0 - _MAC->_gV(I,J+1,K)) / _cell_size;
+            }
+            if (K == 0 || _MAC->_gType(I,J,K-1) == SOLID) {
+                div += (_MAC->_gW(I,J,K) - 0) / _cell_size;
+            }
+            if (K == _MAC->_gType.countZ() - 1 || _MAC->_gType(I,J,K+1) == SOLID) {
+                div += (0 - _MAC->_gW(I,J,K+1)) / _cell_size;
+            }
+
             coefficientsB.push_back(T(IDX,0,div));
 //            b(IDX) = div;
 //        } else {
@@ -341,21 +381,19 @@ void FluidSolver::pressureSolve(float step) {
 //    std::cout << A << std::endl;
 
     b.setFromTriplets(coefficientsB.begin(), coefficientsB.end());
-//    Eigen::ConjugateGradient<Eigen::SparseMatrix<float>, Eigen::Lower|Eigen::Upper, Eigen::IncompleteCholesky<float>> cg(A);
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<float>, Eigen::Lower, Eigen::IdentityPreconditioner> cg(A);
+//    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower, Eigen::IncompleteCholesky<double> > cg(A);
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower, Eigen::IdentityPreconditioner> cg(A);
     x = cg.solve(b);
 //    std::cout << x << std::endl;
 
     _MAC->_gP.clear(0);
-    for (Eigen::SparseVector<float>::InnerIterator it(x); it; ++it) {
+    for (Eigen::SparseVector<double>::InnerIterator it(x); it; ++it) {
 //        std::cout << it.value() << std::endl;
         if (_MAC->_gType(it.index()) == FLUID) {
             _MAC->_gP(it.index()) = it.value();
         }
     }
-//    for (size_t i = 0; i < _MAC->_gType.size(); i++) {
-//        _MAC->_gP(i) = x(i);
-//    }
+    //return;
 
     scale = step/(1.f*_cell_size);
     _MAC->_gU.iterate([&](size_t i, size_t j, size_t k) {
@@ -363,7 +401,7 @@ void FluidSolver::pressureSolve(float step) {
         bool rightExists = i < _MAC->_gP.countX();
         bool leftFluid = leftExists && _MAC->_gType(i-1,j,k) == FLUID;
         bool rightFluid = rightExists && _MAC->_gType(i,j,k) == FLUID;
-        if (leftExists && rightExists && (leftFluid || rightFluid)) {
+        if ((leftFluid || rightFluid)) {
             float delP = _MAC->_gP(i,j,k) - _MAC->_gP(i-1,j,k);
             _MAC->_gU(i,j,k) -= scale * delP;
         }
@@ -374,7 +412,7 @@ void FluidSolver::pressureSolve(float step) {
         bool rightExists = j < _MAC->_gP.countY();
         bool leftFluid = leftExists && _MAC->_gType(i,j-1,k) == FLUID;
         bool rightFluid = rightExists && _MAC->_gType(i,j,k) == FLUID;
-        if (leftExists && rightExists && (leftFluid || rightFluid)) {
+        if ((leftFluid || rightFluid)) {
             float delP = _MAC->_gP(i,j,k) - _MAC->_gP(i,j-1,k);
             _MAC->_gV(i,j,k) -= scale * delP;
         }
@@ -385,7 +423,7 @@ void FluidSolver::pressureSolve(float step) {
         bool rightExists = k < _MAC->_gP.countZ();
         bool leftFluid = leftExists && _MAC->_gType(i,j,k-1) == FLUID;
         bool rightFluid = rightExists && _MAC->_gType(i,j,k) == FLUID;
-        if (leftExists && rightExists && (leftFluid || rightFluid)) {
+        if ((leftFluid || rightFluid)) {
             float delP = _MAC->_gP(i,j,k) - _MAC->_gP(i,j,k-1);
             _MAC->_gW(i,j,k) -= scale * delP;
         }
@@ -424,7 +462,7 @@ void FluidSolver::extrapolateVelocity() {
         }
     });
     _MAC->_gV.iterate([&](size_t i, size_t j, size_t k) {
-        bool shouldExtrapolate = (_MAC->_gType.checkIdx(i,j-1,k) && _MAC->_gType(i-1,j,k) != FLUID) || (_MAC->_gType.checkIdx(i,j,k) && _MAC->_gType(i,j,k) != FLUID);
+        bool shouldExtrapolate = (_MAC->_gType.checkIdx(i,j-1,k) && _MAC->_gType(i,j-1,k) != FLUID) || (_MAC->_gType.checkIdx(i,j,k) && _MAC->_gType(i,j,k) != FLUID);
         if (shouldExtrapolate) {
             bool fromUp = (_MAC->_gType.checkIdx(i+1,j-1,k) && _MAC->_gType(i+1,j-1,k) == FLUID) || (_MAC->_gType.checkIdx(i+1,j,k) && _MAC->_gType(i+1,j,k) == FLUID);
             bool fromDown = (_MAC->_gType.checkIdx(i-1,j-1,k) && _MAC->_gType(i-1,j-1,k) == FLUID) || (_MAC->_gType.checkIdx(i-1,j,k) && _MAC->_gType(i-1,j,k) == FLUID);
@@ -444,7 +482,7 @@ void FluidSolver::extrapolateVelocity() {
         }
     });
     _MAC->_gW.iterate([&](size_t i, size_t j, size_t k) {
-        bool shouldExtrapolate = (_MAC->_gType.checkIdx(i,j,k-1) && _MAC->_gType(i-1,j,k) != FLUID) || (_MAC->_gType.checkIdx(i,j,k) && _MAC->_gType(i,j,k) != FLUID);
+        bool shouldExtrapolate = (_MAC->_gType.checkIdx(i,j,k-1) && _MAC->_gType(i,j,k-1) != FLUID) || (_MAC->_gType.checkIdx(i,j,k) && _MAC->_gType(i,j,k) != FLUID);
         if (shouldExtrapolate) {
             bool fromUp = (_MAC->_gType.checkIdx(i+1,j,k-1) && _MAC->_gType(i+1,j,k-1) == FLUID) || (_MAC->_gType.checkIdx(i+1,j,k) && _MAC->_gType(i+1,j,k) == FLUID);
             bool fromDown = (_MAC->_gType.checkIdx(i-1,j,k-1) && _MAC->_gType(i-1,j,k-1) == FLUID) || (_MAC->_gType.checkIdx(i-1,j,k) && _MAC->_gType(i-1,j,k) == FLUID);
@@ -578,9 +616,9 @@ void FluidSolver::resolveCollisions() {
             FluidParticle &particle = _particles[i];
             glm::vec3 normal;
             if (_container->collides(particle.pos_old, particle.pos, normal)) {
-//                particle.col = glm::vec3(1,0,0);
-                glm::vec3 mask = glm::vec3(1,1,1) - glm::abs(normal);
-                //particle.vel *= mask;
+                particle.col = glm::vec3(1,0,0);
+//                glm::vec3 mask = glm::vec3(1,1,1) - 2.f*glm::abs(normal);
+                particle.vel *= -glm::abs(normal);
                 particle.pos = particle.pos_old;
             }
         }
@@ -612,7 +650,7 @@ void FluidSolver::updateCells() {
 
     }
 
-    /*std::function<void(size_t, size_t, size_t)> setSolid = [&](size_t i, size_t j, size_t k) {
+    std::function<void(size_t, size_t, size_t)> setSolid = [&](size_t i, size_t j, size_t k) {
         _MAC->_gType(i,j,k) = SOLID;
     };
 
@@ -621,7 +659,7 @@ void FluidSolver::updateCells() {
     _MAC->_gType.iterateRegion(0,0,0, _MAC->_gType.countX(),1,_MAC->_gType.countZ(), setSolid);
     _MAC->_gType.iterateRegion(0,_MAC->_gType.countY()-1,0, _MAC->_gType.countX(),_MAC->_gType.countY(),_MAC->_gType.countZ(), setSolid);
     _MAC->_gType.iterateRegion(0,0,0, _MAC->_gType.countX(),_MAC->_gType.countY(),1, setSolid);
-    _MAC->_gType.iterateRegion(0,0,_MAC->_gType.countZ()-1, _MAC->_gType.countX(),_MAC->_gType.countY(),_MAC->_gType.countZ(), setSolid);*/
+    _MAC->_gType.iterateRegion(0,0,_MAC->_gType.countZ()-1, _MAC->_gType.countX(),_MAC->_gType.countY(),_MAC->_gType.countZ(), setSolid);
 
 }
 

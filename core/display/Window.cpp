@@ -295,7 +295,7 @@ void Window::initloop(std::function<void(void)> predraw) {
         glfwPollEvents();
     }
 
-    TwTerminate();
+//    TwTerminate();
 
     glfwDestroyWindow(_window);
     glfwTerminate();

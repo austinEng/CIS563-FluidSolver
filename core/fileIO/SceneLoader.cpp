@@ -59,6 +59,7 @@ FluidSolver* SceneLoader::parseJson(const Json::Value &root) {
     float cellSize = std::max(std::max(containerSize.x, containerSize.y), containerSize.z) / resolution.asFloat();
 
     Box* container = new Box(containerPos, containerSize);
+//    Box* container = new Box(containerPos, containerSize + 2.f*glm::vec3(cellSize, cellSize, cellSize));
     Box fluidObject = Box(fluidPos, fluidSize);
 
     FluidSolver* solver = new FluidSolver(cellSize/2, cellSize);

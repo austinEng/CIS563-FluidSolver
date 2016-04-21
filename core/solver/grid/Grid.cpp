@@ -30,7 +30,7 @@ template <typename T> Grid<T>::Grid(const glm::vec3 &origin, const glm::vec3 &of
         _countY((size_t) (std::floor((_dim.y - _offset.y) / _cellSize)+1)),
         _countZ((size_t) (std::floor((_dim.z - _offset.z) / _cellSize)+1)) {
     _contents = std::vector<T>((unsigned long) (_countX * _countY * _countZ));
-    std::cout << "Constructing " << _countX << "x" << _countY << "x" << _countZ << " grid..." << std::endl;
+    std::cout << "Constructing " << _countX << "x" << _countY << "x" << _countZ << " grid..." << glm::to_string(origin) << " to " << glm::to_string(origin+dim) << std::endl;
 }
 /*
 template <typename T> template <typename C> Grid<T>::Grid(const Grid<C> &rhs) :
@@ -106,7 +106,7 @@ template <typename T> const T& Grid<T>::at(const glm::vec3 &pos) const {
 }
 
 template <typename T> glm::ivec3 Grid<T>::indexOf(const glm::vec3 &pos) const {
-    glm::vec3 indices = (pos - _offset - _origin) / _cellSize;
+    glm::vec3 indices = (pos - 0.f*_offset - _origin) / _cellSize;
     int i = (int) indices.x;
     int j = (int) indices.y;
     int k = (int) indices.z;
@@ -117,7 +117,7 @@ template <typename T> glm::ivec3 Grid<T>::indexOf(const glm::vec3 &pos) const {
 }
 
 template <typename T> void Grid<T>::indexOf(const glm::vec3 &pos, size_t &i, size_t &j, size_t &k) const {
-    glm::vec3 indices = (pos - _offset - _origin) / _cellSize;
+    glm::vec3 indices = (pos - 0.f*_offset - _origin) / _cellSize;
     indices = glm::clamp(indices, glm::vec3(0,0,0), glm::vec3(_countX-1, _countY-1, _countZ-1));
     i = (size_t) indices.x;
     j = (size_t) indices.y;

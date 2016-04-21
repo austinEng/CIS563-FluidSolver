@@ -17,26 +17,26 @@ int main(int argc, char* argv[]) {
 
 //    particlesWriter.writeData(solver, "particles_0.vdb");
 
-    ParticlesPainter particlesPainter(solver);
+    ParticlesPainter particlesPainter(solver, 1);
     BoxPainter boxPainter((Box *) solver->_container);
     GridVectorAttributePainter uPainter (&solver->_MAC->_gU, 3.f, glm::vec3(1,0,0), glm::vec3(0.2,0,0));
     GridVectorAttributePainter vPainter (&solver->_MAC->_gV, 3.f, glm::vec3(0,1,0), glm::vec3(0,0.2,0));
     GridVectorAttributePainter wPainter (&solver->_MAC->_gW, 3.f, glm::vec3(0,0,1), glm::vec3(0,0,0.2));
     GridScalarAttributePainter tPainter (
-            &solver->_MAC->_gType, 0.f, 1.f, 0.f, 7.f, glm::vec3(0,0,0), glm::vec3(0,0,1));
+            &solver->_MAC->_gType, 0.f, 2.f, 0.f, 8.f, glm::vec3(0,1,1), glm::vec3(0,0,0));
     GridScalarAttributePainter posPressurePainter (
-            &solver->_MAC->_gP, 0.f, 100.f, 0.f, 5.f, glm::vec3(1,1,0), glm::vec3(1,0,0));
+            &solver->_MAC->_gP, 0.f, 50.f, 0.f, 5.f, glm::vec3(1,1,0), glm::vec3(1,0,0));
     GridScalarAttributePainter negPressurePainter (
-            &solver->_MAC->_gP, 0.f, -100.f, 0.f, 5.f, glm::vec3(0,1,1), glm::vec3(0,0,1));
+            &solver->_MAC->_gP, 0.f, -2.f, 0.f, 5.f, glm::vec3(0,1,1), glm::vec3(0,0,1));
 
     window->addPainter(&particlesPainter);
     window->addPainter(&boxPainter);
-//    window->addPainter(&uPainter);
-//    window->addPainter(&vPainter);
-//    window->addPainter(&wPainter);
+    window->addPainter(&uPainter);
+    window->addPainter(&vPainter);
+    window->addPainter(&wPainter);
 //    window->addPainter(&tPainter);
-//    window->addPainter(&posPressurePainter);
-//    window->addPainter(&negPressurePainter);
+    window->addPainter(&posPressurePainter);
+    window->addPainter(&negPressurePainter);
 
     window->loadSceneCB = [](void*) {
         std::cout << "what" << std::endl;
@@ -63,8 +63,11 @@ int main(int argc, char* argv[]) {
             std::string filename = "particles_";
             filename.append(std::to_string(++frame));
             filename.append(".tga");
-            window->saveImage(filename);
+//            window->saveImage(filename);
 //            particlesWriter.writeData(solver, filename);
+            if (frame >= 960) {
+                exit(0);
+            }
         }
     });
 //    solver->update(0.1f);
