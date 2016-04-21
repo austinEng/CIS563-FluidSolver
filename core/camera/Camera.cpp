@@ -5,7 +5,7 @@
 #include "Camera.h"
 
 Camera::Camera(int w, int h) :
-        zoom(10),
+        zoom(35),
         eye(glm::vec3(0,0,zoom)),
         tgt(glm::vec3(0,0,0)),
         width(w),

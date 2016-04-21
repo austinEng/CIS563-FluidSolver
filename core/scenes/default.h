@@ -12,7 +12,7 @@ const char* default_scene = R"(
     "position": [0,0,0],
     "scale": [4,4,4]
   },
-  "resolution": 24
+  "resolution": 20
 }
 
 /*{
